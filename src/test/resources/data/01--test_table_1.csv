@@ -1,0 +1,5 @@
+enum_field;big_field;read_only;is_deleted;double_field;char_field;date_field;time_field;timestamp_field;decimal_field_1;decimal_field_2;numeric_field;boolean_field;smallint_field;bigint_field;real_field;binary_field;varbinary_field;other_field
+table: test_table_1; keys: enum_field; action: modify
+
+TEST1;test_1;10;1;11.3;test_ch1;2023-05-07; 13:08:33;2023-05-07 13:08:33.456;45;45.33;33.567;true;20;123456789;234.54;111111;11111111;other field
+TEST2;test_2;11;2;12.3;test_ch2;2023-05-08; 13:09:33;2023-05-08 13:09:34.456;46;46.33;34.567;false;21;123879789;235.54;111111111;11111111111;other field_2

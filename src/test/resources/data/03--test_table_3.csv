@@ -1,0 +1,5 @@
+enum_field_2;big_field_2;read_only;is_deleted;test_table_1_id;test_table_2_id
+table: test_table_3; keys: enum_field_2; references: test_table_1_id = test_table_1(enum_field), test_table_2_id = test_table_2(enum_field_2); condition: is_deleted = 0; action: modify
+
+TEST31;test_32;30;1;TEST1;TEST11
+TEST32;test_33;31;0;TEST2;TEST12
