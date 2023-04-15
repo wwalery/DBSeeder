@@ -273,7 +273,7 @@ public class DBWriter implements IWriter {
                 case Types.BINARY, Types.VARBINARY ->
                     new BigInteger(stringItem, 2).toByteArray();
                 case Types.ARRAY -> {
-                    String[] elems = StringUtils.stripAll(StringUtils.split(stringItem, settings.arrayDelimiter()));
+                    String[] elems = StringUtils.stripAll(StringUtils.split(stringItem, settings.csvArrayDelimiter()));
                     yield elems;
                 }
                 default ->

@@ -26,7 +26,8 @@ public class SQLGeneratorTest {
         info.getFields().addAll(List.of("key_id", "test_1_1", "test_2_2", "test_3_3"));
         ReferenceInfo ref = new ReferenceInfo();
         ref.setFieldIdx(0);
-        ref.setFieldName("key_id");
+        ref.setFieldName("test_2");
+        ref.setTableKeyColumn("key_id");
         ref.setTableName("test");
         ref.setTableColumn("test_2");
         info.getReferences().put("key_id", ref);

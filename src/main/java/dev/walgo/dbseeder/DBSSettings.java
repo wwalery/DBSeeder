@@ -20,8 +20,18 @@ public abstract class DBSSettings {
     }
 
     @Value.Default
-    public char arrayDelimiter() {
+    public char csvArrayDelimiter() {
         return '|';
+    }
+
+    @Value.Default
+    public char csvDelimiter() {
+        return ';';
+    }
+
+    @Value.Default
+    public String csvComment() {
+        return "#";
     }
 
     public static class Builder extends DBSSettingsBuilder {

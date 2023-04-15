@@ -9,6 +9,7 @@ import dev.walgo.walib.ResourceUtils;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,7 +47,7 @@ public class DBSeeder {
     }
 
     public SeedInfo read(String fileName, InputStream stream) {
-        IReader reader = ReaderFactory.getReader(settings.sourceType());
+        IReader reader = ReaderFactory.getReader(settings);
         try {
             SeedInfo info = reader.read(fileName, stream);
             info.setResourceName(fileName);
@@ -81,20 +82,37 @@ public class DBSeeder {
     /**
      * Write single resource data into database.
      *
-     * @param info source info
+     * @param info        source info
+     * @param writerClass class for write data into DB
      */
-    public void write(SeedInfo info) {
-        IWriter writer = new DBWriter(infos, settings);
-        writer.write(info);
+    public void write(SeedInfo info, Class<? extends DBWriter> writerClass) {
+        try {
+            IWriter writer = writerClass.getConstructor(List.class, DBSSettings.class).newInstance(infos, settings);
+            writer.write(info);
+        } catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException
+                | InvocationTargetException ex) {
+            LOG.error("Error on write", ex);
+        }
+    }
+
+    /**
+     * Write data into DB.
+     * 
+     * Use default implementation of {@link DBWriter}
+     */
+    public void write() {
+        write(DBWriter.class);
     }
 
     /**
      * Write all data into database.
+     * 
+     * @param writerClass class for write data into DB
      */
-    public void write() {
+    public void write(Class<? extends DBWriter> writerClass) {
         for (SeedInfo info : infos) {
             LOG.info("Write table [{}] from resource [{}]", info.getTableName(), info.getResourceName());
-            write(info);
+            write(info, writerClass);
         }
     }
 

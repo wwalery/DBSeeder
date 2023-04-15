@@ -1,5 +1,6 @@
 package dev.walgo.dbseeder.reader.csv;
 
+import dev.walgo.dbseeder.DBSSettings;
 import dev.walgo.dbseeder.data.ActionType;
 import dev.walgo.dbseeder.data.DataRow;
 import dev.walgo.dbseeder.data.ReferenceInfo;
@@ -23,6 +24,12 @@ public class CSVReader implements IReader {
     private static final Logger LOG = LoggerFactory.getLogger(CSVReader.class);
     private static final Pattern REFERENCE_REGEX = Pattern.compile("(.+?)=(.+?)\\((.+?)\\)");
 
+    private final DBSSettings settings;
+
+    public CSVReader(DBSSettings settings) {
+        this.settings = settings;
+    }
+
     @Override
     public SeedInfo read(String resourceName, InputStream input) {
         SeedInfo info = new SeedInfo();
@@ -43,12 +50,12 @@ public class CSVReader implements IReader {
             List<DataRow> data = info.getData();
             while ((line = reader.readLine()) != null) {
                 lineNum++;
-                if (StringUtils.isEmpty(line) || line.startsWith(CSVSettings.COMMENT)) {
+                if (StringUtils.isEmpty(line) || line.startsWith(settings.csvComment())) {
                     continue;
                 }
                 DataRow.Builder row = new DataRow.Builder()
                         .sourceNumber(lineNum);
-                String[] parts = StringUtils.split(line, CSVSettings.FIELD_DELIMITER);
+                String[] parts = StringUtils.split(line, settings.csvDelimiter());
                 if (parts.length != info.getFields().size()) {
                     throw new RuntimeException("There is [%s] columns in header but [%s] in line [%s]"
                             .formatted(info.getFields().size(), parts.length, lineNum - 1));
@@ -65,7 +72,7 @@ public class CSVReader implements IReader {
     }
 
     private void parseFieldList(String line, SeedInfo info) {
-        String[] parts = StringUtils.split(line, CSVSettings.FIELD_DELIMITER);
+        String[] parts = StringUtils.split(line, settings.csvDelimiter());
         List<String> fields = info.getFields();
         for (String part : parts) {
             fields.add(StringUtils.trim(part));
@@ -114,7 +121,7 @@ public class CSVReader implements IReader {
     }
 
     private void parseSettings(String line, SeedInfo info) {
-        String[] settings = StringUtils.split(line, CSVSettings.FIELD_DELIMITER);
+        String[] settings = StringUtils.split(line, this.settings.csvDelimiter());
         for (String setting : settings) {
             String[] parts = StringUtils.split(setting, CSVSettings.S_DELIMITER, 2);
             if (parts.length != 2) {
