@@ -39,7 +39,7 @@ key, value
 table: test_table; keys: key                                                                                                                     
                                                                                                                                                                                                                                     
 test key 1;test value 1
-test key 2;!!test value 2
+test key 2;!!`test value 2`
 ```
 
 produces SQL:
