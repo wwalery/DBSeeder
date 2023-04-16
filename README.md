@@ -6,17 +6,14 @@ Uses simple CSV with the predefined structure to seed data into DB.
 
 Short QA:
 
-    1. 
-        Q: Why don't seed data via SQL and Flyway/Liquidbase/etc?                                                                                                                                                                         
-        A: Data changing via SQL is enough for you for the project to start, but after a while, it's not very convenient to analyze a lot of SQLs to understand the last data state
+    Q: Why don't seed data via SQL and Flyway/Liquidbase/etc?                                                                                                                                                                         
+    A: Data changing via SQL is enough for you for the project to start, but after a while, it's not very convenient to analyze a lot of SQLs to understand the last data state
   
-    2. 
-        Q: It's much simpler for me to do the same via SQL
-        A: Maybe, but usually slightly simpler to create/update CSV than write SQL for the same
+    Q: It's much simpler for me to do the same via SQL
+    A: Maybe, but usually slightly simpler to create/update CSV than write SQL for the same
 
-    3. 
-        Q: Why INSERT/UPDATE only, but not DELETE?
-        A: Because DELETE is a more sensitive operation than others. So it's better to remove unnecessary rows from CSV and create an SQL script to remove the same rows from DB
+    Q: Why INSERT/UPDATE only, but not DELETE?
+    A: Because DELETE is a more sensitive operation than others. So it's better to remove unnecessary rows from CSV and create an SQL script to remove the same rows from DB
   
 
 ## CSV structure
