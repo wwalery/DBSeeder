@@ -18,7 +18,7 @@ Maybe, but usually slightly simpler to create/update CSV than write SQL for the 
 
 > Why INSERT/UPDATE only, but not DELETE?
 
-A: Because DELETE is a more sensitive operation than others. So it's better to remove unnecessary rows from CSV and create an SQL script to remove the same rows from DB
+Because DELETE is a more sensitive operation than others. So it's better to remove unnecessary rows from CSV and create an SQL script to remove the same rows from DB
   
 
 ## CSV structure
