@@ -54,7 +54,8 @@ public class SQLGeneratorTest {
         assertThat(result).isNotNull();
         assertThat(result.sql()).isEqualTo("INSERT INTO test (test_1, test_2, test_3) VALUES (?, ?, ?)");
         assertThat(result.data()).containsExactlyElementsOf(data.values());
-        assertThat(result.fields()).containsExactlyElementsOf(info.getFields());
+        List<String> testFields = result.fields().stream().map(it -> it.name).toList();
+        assertThat(testFields).containsExactlyElementsOf(info.getFields());
     }
 
     @Test
@@ -68,7 +69,8 @@ public class SQLGeneratorTest {
         assertThat(result.data()).containsExactlyElementsOf(List.of("1", "3"));
         ArrayList<String> fields = new ArrayList<>(info.getFields());
         fields.remove("test_2");
-        assertThat(result.fields()).containsExactlyElementsOf(fields);
+        List<String> testFields = result.fields().stream().map(it -> it.name).toList();
+        assertThat(testFields).containsExactlyElementsOf(fields);
     }
 
     @Test
@@ -82,7 +84,8 @@ public class SQLGeneratorTest {
         assertThat(result.sql()).isEqualTo(
                 "INSERT INTO test_2 (key_id, test_1_1, test_2_2, test_3_3) VALUES ((SELECT key_id FROM test WHERE test_2 = ?), ?, ?, ?)");
         assertThat(result.data()).containsExactlyElementsOf(data.values());
-        assertThat(result.fields()).containsExactlyElementsOf(info2.getFields());
+        List<String> testFields = result.fields().stream().map(it -> it.name).toList();
+        assertThat(testFields).containsExactlyElementsOf(info2.getFields());
     }
 
     /**
@@ -98,7 +101,8 @@ public class SQLGeneratorTest {
         assertThat(result).isNotNull();
         assertThat(result.sql()).isEqualTo("UPDATE test SET test_1 = ?, test_3 = ? WHERE test_2 = ?");
         assertThat(result.data()).containsExactlyElementsOf(List.of("1", "3", "2"));
-        assertThat(result.fields()).containsExactlyElementsOf(List.of("test_1", "test_3", "test_2"));
+        List<String> testFields = result.fields().stream().map(it -> it.name).toList();
+        assertThat(testFields).containsExactlyElementsOf(List.of("test_1", "test_3", "test_2"));
     }
 
     @Test
@@ -112,7 +116,8 @@ public class SQLGeneratorTest {
         assertThat(result.data()).containsExactlyElementsOf(List.of("1", "3"));
         ArrayList<String> fields = new ArrayList<>(info.getFields());
         fields.remove("test_2");
-        assertThat(result.fields()).containsExactlyElementsOf(fields);
+        List<String> testFields = result.fields().stream().map(it -> it.name).toList();
+        assertThat(testFields).containsExactlyElementsOf(fields);
     }
 
     @Test
@@ -126,7 +131,8 @@ public class SQLGeneratorTest {
         assertThat(result.sql()).isEqualTo(
                 "UPDATE test_2 SET key_id = (SELECT key_id FROM test WHERE test_2 = ?), test_1_1 = ?, test_3_3 = ? WHERE test_2_2 = ?");
         assertThat(result.data()).containsExactlyElementsOf(List.of("0", "1", "3", "2"));
-        assertThat(result.fields()).containsExactlyElementsOf(List.of("key_id", "test_1_1", "test_3_3", "test_2_2"));
+        List<String> testFields = result.fields().stream().map(it -> it.name).toList();
+        assertThat(testFields).containsExactlyElementsOf(List.of("key_id", "test_1_1", "test_3_3", "test_2_2"));
     }
 
     @Test
@@ -149,7 +155,8 @@ public class SQLGeneratorTest {
         assertThat(result).isNotNull();
         assertThat(result.sql()).isEqualTo("SELECT COUNT(*) FROM test WHERE test_2 = ?");
         assertThat(result.data()).containsExactlyElementsOf(List.of("2"));
-        assertThat(result.fields()).containsExactlyElementsOf(List.of("test_2"));
+        List<String> testFields = result.fields().stream().map(it -> it.name).toList();
+        assertThat(testFields).containsExactlyElementsOf(List.of("test_2"));
     }
 
     /**
