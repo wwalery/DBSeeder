@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -35,30 +36,33 @@ public class CSVReader implements IReader {
         SeedInfo info = new SeedInfo();
         int lineNum = 0;
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8))) {
-            String line = reader.readLine();
-            if (line == null) {
+            String rawLine = reader.readLine();
+            String line = StringUtils.trim(rawLine);
+            if (StringUtils.isEmpty(line)) {
                 throw new RuntimeException("Line 1 (field list) not defined");
             }
             lineNum++;
             parseFieldList(line, info);
             line = reader.readLine();
-            if (line == null) {
+            if (StringUtils.isEmpty(line)) {
                 throw new RuntimeException("Line 2 (settings) not defined");
             }
             lineNum++;
             parseSettings(line, info);
             List<DataRow> data = info.getData();
-            while ((line = reader.readLine()) != null) {
+            while ((rawLine = reader.readLine()) != null) {
                 lineNum++;
+                line = StringUtils.trim(rawLine);
+
                 if (StringUtils.isEmpty(line) || line.startsWith(settings.csvComment())) {
                     continue;
                 }
-                DataRow.Builder row = new DataRow.Builder()
-                        .sourceNumber(lineNum);
-                String[] parts = StringUtils.split(line, settings.csvDelimiter());
+                DataRow.Builder row = new DataRow.Builder().sourceNumber(lineNum);
+                String[] parts = StringUtils.splitPreserveAllTokens(line, settings.csvDelimiter());
                 if (parts.length != info.getFields().size()) {
+                    LOG.warn("Parts = {}", Arrays.asList(parts));
                     throw new RuntimeException("There is [%s] columns in header but [%s] in line [%s]"
-                            .formatted(info.getFields().size(), parts.length, lineNum - 1));
+                            .formatted(info.getFields().size(), parts.length, lineNum));
                 }
                 for (String part : parts) {
                     row.addValues(StringUtils.trim(part));

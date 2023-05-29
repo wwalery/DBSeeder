@@ -14,6 +14,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,14 +85,16 @@ public class DBSeeder {
      *
      * @param info        source info
      * @param writerClass class for write data into DB
+     * @return number of inserted/updated records
      */
-    public void write(SeedInfo info, Class<? extends DBWriter> writerClass) {
+    public Pair<Integer, Integer> write(SeedInfo info, Class<? extends DBWriter> writerClass) {
         try {
             IWriter writer = writerClass.getConstructor(List.class, DBSSettings.class).newInstance(infos, settings);
-            writer.write(info);
+            return writer.write(info);
         } catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException
                 | InvocationTargetException ex) {
             LOG.error("Error on write", ex);
+            return Pair.of(0, 0);
         }
     }
 
@@ -112,7 +115,9 @@ public class DBSeeder {
     public void write(Class<? extends DBWriter> writerClass) {
         for (SeedInfo info : infos) {
             LOG.info("Write table [{}] from resource [{}]", info.getTableName(), info.getResourceName());
-            write(info, writerClass);
+            Pair<Integer, Integer> result = write(info, writerClass);
+            LOG.info("{}: {} records inserted, {} records updated",
+                    info.getTableName(), result.getLeft(), result.getRight());
         }
     }
 

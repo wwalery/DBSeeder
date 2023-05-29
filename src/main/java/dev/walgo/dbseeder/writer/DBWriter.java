@@ -58,7 +58,7 @@ public class DBWriter implements IWriter {
                 ColumnInfo field = fields.get(fieldName);
                 if (field == null) {
                     throw new RuntimeException(
-                            "Field N %s [%s] doen't exists in table [%s]".formatted(i + 1, dataField,
+                            "Field N %s [%s] doesn't exists in table [%s]".formatted(i + 1, dataField,
                                     info.getTableName()));
                 }
                 if (info.getReferences().containsKey(fieldName)) {
@@ -90,7 +90,7 @@ public class DBWriter implements IWriter {
                 ColumnInfo field = fields.get(fieldName);
                 if (field == null) {
                     throw new RuntimeException(
-                            "Key N %s [%s] doen't exists in table [%s]".formatted(i, dataField, info.getTableName()));
+                            "Key N %s [%s] doesn't exists in table [%s]".formatted(i, dataField, info.getTableName()));
                 }
                 i++;
             }
@@ -126,13 +126,14 @@ public class DBWriter implements IWriter {
             for (DataRow data : info.getData()) {
                 try {
                     boolean recordExists = false;
-                    if (info.getAction() != ActionType.IGNORE) {
+                    if (info.getAction() != ActionType.IGNORE_NOT_EMPTY) {
                         RequestInfo checkData = generator.checkRecord(info, data);
                         Number records = query(info, checkData);
                         recordExists = records.intValue() > 0;
                     }
                     switch (info.getAction()) {
                         case INSERT:
+                        case IGNORE_NOT_EMPTY:
                             if (!recordExists) {
                                 RequestInfo insertData = generator.insert(info, data);
                                 update(info, insertData);
@@ -199,12 +200,12 @@ public class DBWriter implements IWriter {
 //            }
             Map<String, ColumnInfo> fields = table.getFields();
             for (int i = 0; i < requestData.fields().size(); i++) {
-                String dataField = requestData.fields().get(i);
-                String fieldName = dataField.toLowerCase();
+                RequestInfo.Field dataField = requestData.fields().get(i);
+                String fieldName = dataField.name.toLowerCase();
                 ColumnInfo field = fields.get(fieldName);
 //                if (field == null) {
 //                    throw new RuntimeException(
-//                            "Field [%s] doen't exists in table [%s]".formatted(dataField, info.getTableName()));
+//                            "Field [%s] doesn't exists in table [%s]".formatted(dataField, info.getTableName()));
 //                }
                 String stringItem = requestData.data().get(i);
                 if (info.getReferences().containsKey(fieldName)) {
@@ -225,8 +226,8 @@ public class DBWriter implements IWriter {
                     data.add(dataItem);
                 } catch (Throwable ex) {
                     throw new RuntimeException(
-                            "Error on field %s [%s], value [%s] conversion: %s".formatted(i + 1, dataField, stringItem,
-                                    ex.getMessage()),
+                            "Error on field %s [%s], value [%s] conversion: %s"
+                                    .formatted(dataField.pos + 1, dataField.name, stringItem, ex.getMessage()),
                             ex);
                 }
             }
@@ -245,6 +246,7 @@ public class DBWriter implements IWriter {
      * @return converted value
      */
     protected Object string2object(String stringItem, ColumnInfo field) {
+        LOG.trace("Convert {} into object", field);
         Object dataItem;
         if (stringItem == null) {
             dataItem = null;
@@ -252,9 +254,12 @@ public class DBWriter implements IWriter {
             dataItem = stringItem;
         } else {
             dataItem = switch (field.type()) {
+                case Types.SMALLINT ->
+                    Integer.valueOf(stringItem);
                 case Types.BIGINT ->
                     Long.valueOf(stringItem);
-                case Types.BOOLEAN ->
+                case Types.BOOLEAN,
+                        Types.BIT ->
                     Boolean.valueOf(stringItem);
                 case Types.DATE ->
                     Date.valueOf(stringItem);

@@ -42,7 +42,7 @@ public class SQLGenerator {
             }
             if (isPlaceholder(value)) {
                 builder.addData(data.values().get(i));
-                builder.addFields(field);
+                builder.addFields(new RequestInfo.Field(field, i));
             }
         }
         String sql = "INSERT INTO %s (%s) VALUES (%s)".formatted(info.getTableName(), fieldNames, insertVars);
@@ -53,7 +53,7 @@ public class SQLGenerator {
     public RequestInfo update(SeedInfo info, DataRow data) {
         String updateStr = "";
         String whereString = "";
-        List<String> whereFields = new ArrayList<>();
+        List<RequestInfo.Field> whereFields = new ArrayList<>();
         List<String> whereVars = new ArrayList<>();
         RequestInfo.Builder builder = new RequestInfo.Builder();
         for (int i = 0; i < info.getFields().size(); i++) {
@@ -68,7 +68,7 @@ public class SQLGenerator {
                 whereString += field + " = " + itemValue;
                 if (isPlaceholder(placeholder)) {
                     whereVars.add(data.values().get(i));
-                    whereFields.add(field);
+                    whereFields.add(new RequestInfo.Field(field, i));
                 }
             } else {
                 if (!updateStr.isEmpty()) {
@@ -77,7 +77,7 @@ public class SQLGenerator {
                 updateStr += field + " = " + itemValue;
                 if (isPlaceholder(placeholder)) {
                     builder.addData(data.values().get(i));
-                    builder.addFields(field);
+                    builder.addFields(new RequestInfo.Field(field, i));
                 }
             }
         }
@@ -109,11 +109,17 @@ public class SQLGenerator {
                 where += " AND ";
             }
             String value = data.values().get(key.getValue());
-            String placeholer = value2replacement(value);
-            where += key.getKey() + " = " + placeholer;
-            if (isPlaceholder(placeholer)) {
+            String checkValue = value2replacement(value);
+            boolean usePlaceholder = isPlaceholder(checkValue);
+            if (info.getReferences().containsKey(key.getKey())) {
+                ReferenceInfo ref = info.getReferences().get(key.getKey());
+                String refSql = reference(ref, ref.getFieldName(), checkValue);
+                checkValue = '(' + refSql + ')';
+            }
+            where += key.getKey() + " = " + checkValue;
+            if (usePlaceholder) {
                 builder.addData(value);
-                builder.addFields(key.getKey());
+                builder.addFields(new RequestInfo.Field(key.getKey(), info.getFields().indexOf(key.getKey())));
             }
         }
         String result = "SELECT COUNT(*) FROM %s WHERE %s".formatted(info.getTableName(), where);

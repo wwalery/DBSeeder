@@ -35,7 +35,7 @@ dependencies {
   api "org.apache.commons:commons-lang3:${commonsLangVersion}"
   api "org.apache.commons:commons-collections4:${commonsCollectionsVersion}"
   api "commons-dbutils:commons-dbutils:${dbUtilsVersion}"
-  implementation "dev.walgo:walib:0.5.0"
+  implementation "dev.walgo:walib:0.5.1"
 
   errorprone "com.google.errorprone:error_prone_core:${errorProneVersion}"
 
