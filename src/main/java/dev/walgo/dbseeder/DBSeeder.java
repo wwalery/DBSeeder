@@ -11,7 +11,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -63,20 +65,36 @@ public class DBSeeder {
      *
      */
     public void read() {
-        String fileRegex = StringUtils.replace(settings.sourceDir(), "/", "\\/")
-                + ".+?\\"
-                + settings.sourceType().getExtension();
-        List<String> files = ResourceUtils.findResourceFiles(fileRegex)
-                .stream()
-                .sorted()
-                .toList();
+        String srcDir = settings.sourceDir().endsWith("/") ? settings.sourceDir() : settings.sourceDir() + "/";
+        File dir = new File(srcDir);
+        boolean isExternalResource = dir.exists();
+        List<String> files;
+        if (isExternalResource) {
+            files = Arrays.stream(dir.list())
+                    .filter(it -> it.endsWith(settings.sourceExt()))
+                    .sorted()
+                    .toList();
+        } else {
+            String fileRegex = StringUtils.replace(srcDir, "/", "\\/")
+                    + ".+?\\"
+                    + settings.sourceExt();
+            files = ResourceUtils.findResourceFiles(fileRegex)
+                    .stream()
+                    .sorted()
+                    .toList();
+        }
         for (String file : files) {
             LOG.info("Read resource [{}]", file);
             String[] nameParts = StringUtils.split(file, File.separatorChar);
             String fileName = nameParts[nameParts.length - 1];
-            InputStream stream = getClass().getClassLoader().getResourceAsStream(file);
-            SeedInfo info = read(fileName, stream);
-            infos.add(info);
+            try (InputStream stream = isExternalResource
+                    ? Files.newInputStream(Path.of(srcDir + file))
+                    : getClass().getClassLoader().getResourceAsStream(file)) {
+                SeedInfo info = read(fileName, stream);
+                infos.add(info);
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
         }
     }
 
@@ -100,7 +118,7 @@ public class DBSeeder {
 
     /**
      * Write data into DB.
-     * 
+     *
      * Use default implementation of {@link DBWriter}
      */
     public void write() {
@@ -109,7 +127,7 @@ public class DBSeeder {
 
     /**
      * Write all data into database.
-     * 
+     *
      * @param writerClass class for write data into DB
      */
     public void write(Class<? extends DBWriter> writerClass) {

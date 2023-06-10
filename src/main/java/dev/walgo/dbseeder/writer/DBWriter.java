@@ -15,6 +15,7 @@ import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
+import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -270,7 +271,8 @@ public class DBWriter implements IWriter {
                 case Types.TIME ->
                     Time.valueOf(stringItem);
                 case Types.TIMESTAMP ->
-                    Timestamp.valueOf(stringItem);
+                    stringItem.contains("T") ? Timestamp.from(Instant.parse(stringItem))
+                            : Timestamp.valueOf(stringItem);
                 case Types.TIMESTAMP_WITH_TIMEZONE ->
                     ZonedDateTime.parse(stringItem);
                 case Types.TIME_WITH_TIMEZONE ->

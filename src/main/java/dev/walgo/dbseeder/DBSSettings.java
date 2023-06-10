@@ -12,6 +12,18 @@ public abstract class DBSSettings {
 
     public abstract String sourceDir();
 
+    /**
+     * Source files extension.
+     *
+     * Obtained from source type when not set up exactly
+     *
+     * @return extension
+     */
+    @Value.Default
+    public String sourceExt() {
+        return sourceType().getExtension();
+    }
+
     public abstract String dbSchema();
 
     @Value.Default
