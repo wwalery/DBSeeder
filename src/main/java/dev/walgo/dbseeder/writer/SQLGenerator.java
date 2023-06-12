@@ -1,5 +1,6 @@
 package dev.walgo.dbseeder.writer;
 
+import dev.walgo.dbseeder.DBSSettings;
 import dev.walgo.dbseeder.data.DataRow;
 import dev.walgo.dbseeder.data.ReferenceInfo;
 import dev.walgo.dbseeder.data.SeedInfo;
@@ -7,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import org.apache.commons.lang3.StringUtils;
 
 public class SQLGenerator {
 
@@ -14,74 +16,76 @@ public class SQLGenerator {
     public static final String DATA_PLACEHOLDER = "?";
 
     private final Map<String, SeedInfo> sources;
+    private final DBSSettings settings;
 
-    public SQLGenerator(List<SeedInfo> sources) {
+    public SQLGenerator(List<SeedInfo> sources, DBSSettings settings) {
         this.sources = new TreeMap<>();
         for (SeedInfo source : sources) {
             this.sources.put(source.getTableName(), source);
         }
+        this.settings = settings;
     }
 
     public RequestInfo insert(SeedInfo info, DataRow data) {
-        String fieldNames = "";
-        String insertVars = "";
+        final StringBuilder fieldNames = new StringBuilder();
+        final StringBuilder insertVars = new StringBuilder();
         RequestInfo.Builder builder = new RequestInfo.Builder();
-        for (int i = 0; i < info.getFields().size(); i++) {
-            if (i > 0) {
-                fieldNames += ", ";
-                insertVars += ", ";
+        info.getFields().forEach((field, idx) -> {
+            if (idx > 0) {
+                fieldNames.append(", ");
+                insertVars.append(", ");
             }
-            String value = value2replacement(data.values().get(i));
-            String field = info.getFields().get(i);
-            fieldNames += field;
+            String value = value2replacement(data.values().get(idx));
+            fieldNames.append(field);
             ReferenceInfo ref = info.getReferences().get(field);
             if (ref != null) {
-                insertVars += "(" + reference(ref, field, value) + ")";
+                insertVars.append("(").append(reference(ref, field, value)).append(")");
             } else {
-                insertVars += value;
+                insertVars.append(value);
             }
             if (isPlaceholder(value)) {
-                builder.addData(data.values().get(i));
-                builder.addFields(new RequestInfo.Field(field, i));
+                builder.addData(data.values().get(idx));
+                builder.addFields(new RequestInfo.Field(field, idx));
             }
-        }
-        String sql = "INSERT INTO %s (%s) VALUES (%s)".formatted(info.getTableName(), fieldNames, insertVars);
+        });
+        String sql = "INSERT INTO %s (%s) VALUES (%s)".formatted(info.getTableName(),
+                fieldNames.toString(), insertVars.toString());
         builder.sql(sql);
         return builder.build();
     }
 
     public RequestInfo update(SeedInfo info, DataRow data) {
-        String updateStr = "";
-        String whereString = "";
+        final StringBuilder updateStr = new StringBuilder();
+        final StringBuilder whereString = new StringBuilder();
         List<RequestInfo.Field> whereFields = new ArrayList<>();
         List<String> whereVars = new ArrayList<>();
         RequestInfo.Builder builder = new RequestInfo.Builder();
-        for (int i = 0; i < info.getFields().size(); i++) {
-            String field = info.getFields().get(i);
+        info.getFields().forEach((field, idx) -> {
             ReferenceInfo ref = info.getReferences().get(field);
-            String placeholder = value2replacement(data.values().get(i));
+            String placeholder = value2replacement(data.values().get(idx));
             String itemValue = ref == null ? placeholder : "(" + reference(ref, field, placeholder) + ")";
             if (info.getKeys().containsKey(field)) {
                 if (!whereString.isEmpty()) {
-                    whereString += " AND ";
+                    whereString.append(" AND ");
                 }
-                whereString += field + " = " + itemValue;
+                whereString.append(field).append(" = ").append(itemValue);
                 if (isPlaceholder(placeholder)) {
-                    whereVars.add(data.values().get(i));
-                    whereFields.add(new RequestInfo.Field(field, i));
+                    whereVars.add(data.values().get(idx));
+                    whereFields.add(new RequestInfo.Field(field, idx));
                 }
             } else {
                 if (!updateStr.isEmpty()) {
-                    updateStr += ", ";
+                    updateStr.append(", ");
                 }
-                updateStr += field + " = " + itemValue;
+                updateStr.append(field).append(" = ").append(itemValue);
                 if (isPlaceholder(placeholder)) {
-                    builder.addData(data.values().get(i));
-                    builder.addFields(new RequestInfo.Field(field, i));
+                    builder.addData(data.values().get(idx));
+                    builder.addFields(new RequestInfo.Field(field, idx));
                 }
             }
-        }
-        String result = "UPDATE %s SET %s WHERE %s".formatted(info.getTableName(), updateStr, whereString);
+        });
+        String result = "UPDATE %s SET %s WHERE %s".formatted(info.getTableName(),
+                updateStr.toString(), whereString.toString());
         if ((info.getExtraCondition() != null) && !info.getExtraCondition().isEmpty()) {
             result += " AND " + info.getExtraCondition();
         }
@@ -92,8 +96,10 @@ public class SQLGenerator {
     }
 
     public String reference(ReferenceInfo reference, String field, String value) {
+        String column = StringUtils.join(reference.getTableColumn(),
+                " || '" + settings.csvMultiRefDelimiter() + "' || ");
         String result = "SELECT %s FROM %s WHERE %s = %s".formatted(reference.getTableKeyColumn(),
-                reference.getTableName(), reference.getTableColumn(), value);
+                reference.getTableName(), column, value);
         SeedInfo refInfo = sources.get(reference.getTableName());
         if ((refInfo != null) && (refInfo.getExtraCondition() != null) && !refInfo.getExtraCondition().isEmpty()) {
             result += " AND " + refInfo.getExtraCondition();
@@ -119,7 +125,7 @@ public class SQLGenerator {
             where += key.getKey() + " = " + checkValue;
             if (usePlaceholder) {
                 builder.addData(value);
-                builder.addFields(new RequestInfo.Field(key.getKey(), info.getFields().indexOf(key.getKey())));
+                builder.addFields(new RequestInfo.Field(key.getKey(), info.getFields().get(key.getKey())));
             }
         }
         String result = "SELECT COUNT(*) FROM %s WHERE %s".formatted(info.getTableName(), where);

@@ -1,18 +1,35 @@
 package dev.walgo.dbseeder.data;
 
+import java.util.ArrayList;
 import java.util.List;
-import org.immutables.value.Value;
 
-@Value.Immutable
-@Value.Style(visibility = Value.Style.ImplementationVisibility.PRIVATE, overshadowImplementation = true, jdkOnly = true)
-public abstract class DataRow {
+public class DataRow {
 
-    public abstract int sourceNumber();
+    private final int sourceNumber;
+    private final List<String> values = new ArrayList<>();
 
-    @AllowNulls
-    public abstract List<String> values();
+    public DataRow(int sNum) {
+        this.sourceNumber = sNum;
+    }
 
-    public static class Builder extends DataRowBuilder {
+    public int sourceNumber() {
+        return sourceNumber;
+    }
+
+    public List<String> values() {
+        return values;
+    }
+
+    public DataRow addValues(String... vals) {
+        for (String value : vals) {
+            values.add(value);
+        }
+        return this;
+    }
+
+    @Override
+    public String toString() {
+        return "{" + "sourceNumber=" + sourceNumber + ", values=" + values + '}';
     }
 
 }

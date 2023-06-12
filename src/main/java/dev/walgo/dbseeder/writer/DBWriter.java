@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.handlers.ScalarHandler;
 import org.apache.commons.lang3.StringUtils;
@@ -53,38 +54,46 @@ public class DBWriter implements IWriter {
                 throw new RuntimeException("Table [%s] doesn't exist".formatted(info.getTableName()));
             }
             Map<String, ColumnInfo> fields = table.getFields();
-            for (int i = 0; i < info.getFields().size(); i++) {
-                String dataField = info.getFields().get(i);
-                String fieldName = dataField.toLowerCase();
-                ColumnInfo field = fields.get(fieldName);
-                if (field == null) {
-                    throw new RuntimeException(
-                            "Field N %s [%s] doesn't exists in table [%s]".formatted(i + 1, dataField,
-                                    info.getTableName()));
-                }
-                if (info.getReferences().containsKey(fieldName)) {
-                    ReferenceInfo ref = info.getReferences().get(fieldName);
-                    TableInfo refTable = tableMap.get(ref.getTableName().toLowerCase());
-                    if (refTable == null) {
-                        throw new RuntimeException("Reference table [%s] doesn't exist".formatted(ref.getTableName()));
-                    }
-                    field = refTable.getFields().get(ref.getTableColumn().toLowerCase());
+            info.getFields().forEach((dataField, idx) -> {
+                try {
+                    String fieldName = dataField.toLowerCase();
+                    ColumnInfo field = fields.get(fieldName);
                     if (field == null) {
                         throw new RuntimeException(
-                                "Field [%s] doesn't exists in reference table [%s]".formatted(ref.getTableColumn(),
-                                        ref.getTableName()));
+                                "Field N %s [%s] doesn't exists in table [%s]".formatted(idx, dataField,
+                                        info.getTableName()));
                     }
-                    if (refTable.getKeys().isEmpty()) {
-                        throw new RuntimeException(
-                                "Referenced table [%s] hasn't key columns".formatted(ref.getTableName()));
+                    if (info.getReferences().containsKey(fieldName)) {
+                        ReferenceInfo ref = info.getReferences().get(fieldName);
+                        TableInfo refTable = tableMap.get(ref.getTableName().toLowerCase());
+                        if (refTable == null) {
+                            throw new RuntimeException(
+                                    "Reference table [%s] doesn't exist".formatted(ref.getTableName()));
+                        }
+                        for (String refColumn : ref.getTableColumn()) {
+                            field = refTable.getFields().get(refColumn.toLowerCase());
+                            if (field == null) {
+                                throw new RuntimeException(
+                                        "Field [%s] doesn't exists in reference table [%s]".formatted(
+                                                ref.getTableColumn(),
+                                                ref.getTableName()));
+                            }
+                            if (refTable.getKeys().isEmpty()) {
+                                throw new RuntimeException(
+                                        "Referenced table [%s] hasn't key columns".formatted(ref.getTableName()));
+                            }
+                            if (refTable.getKeys().size() > 1) {
+                                throw new RuntimeException(
+                                        "Referenced table [%s] has more than one key columns"
+                                                .formatted(ref.getTableName()));
+                            }
+                        }
+                        ref.setTableKeyColumn(refTable.getKeys().get(0));
                     }
-                    if (refTable.getKeys().size() > 1) {
-                        throw new RuntimeException(
-                                "Referenced table [%s] has more than one key columns".formatted(ref.getTableName()));
-                    }
-                    ref.setTableKeyColumn(refTable.getKeys().get(0));
+                } catch (SQLException ex) {
+                    throw new RuntimeException(ex);
                 }
-            }
+            });
             int i = 1;
             for (String dataField : info.getKeys().keySet()) {
                 String fieldName = dataField.toLowerCase();
@@ -95,11 +104,22 @@ public class DBWriter implements IWriter {
                 }
                 i++;
             }
-
         } catch (SQLException ex) {
             throw new RuntimeException(ex);
         }
 
+    }
+
+    private void onEvent(Map<String, BiConsumer<SeedInfo, DataRow>> events, SeedInfo info, DataRow row) {
+        if (events == null) {
+            return;
+        }
+        BiConsumer<SeedInfo, DataRow> event = events.getOrDefault(info.getTableName(),
+                events.get(DBSSettings.ANY));
+        if (event == null) {
+            return;
+        }
+        event.accept(info, row);
     }
 
     @Override
@@ -121,10 +141,11 @@ public class DBWriter implements IWriter {
                 default:
                     // do nothing
             }
-            SQLGenerator generator = new SQLGenerator(infos);
+            SQLGenerator generator = new SQLGenerator(infos, settings);
             int inserted = 0;
             int updated = 0;
             for (DataRow data : info.getData()) {
+                onEvent(settings.onRow(), info, data);
                 try {
                     boolean recordExists = false;
                     if (info.getAction() != ActionType.IGNORE_NOT_EMPTY) {
@@ -136,6 +157,7 @@ public class DBWriter implements IWriter {
                         case INSERT:
                         case IGNORE_NOT_EMPTY:
                             if (!recordExists) {
+                                onEvent(settings.onInsert(), info, data);
                                 RequestInfo insertData = generator.insert(info, data);
                                 update(info, insertData);
                                 inserted++;
@@ -143,10 +165,12 @@ public class DBWriter implements IWriter {
                             break;
                         case MODIFY:
                             if (!recordExists) {
+                                onEvent(settings.onInsert(), info, data);
                                 RequestInfo insertData = generator.insert(info, data);
                                 update(info, insertData);
                                 inserted++;
                             } else {
+                                onEvent(settings.onUpdate(), info, data);
                                 RequestInfo updateData = generator.update(info, data);
                                 updated += update(info, updateData);
                             }
@@ -196,41 +220,26 @@ public class DBWriter implements IWriter {
         try {
             Map<String, TableInfo> tableMap = dbInfo.getTablesAsMap();
             TableInfo table = tableMap.get(info.getTableName().toLowerCase());
-//            if (table == null) {
-//                throw new RuntimeException("Table [%s] doesn't exist".formatted(info.getTableName()));
-//            }
             Map<String, ColumnInfo> fields = table.getFields();
             for (int i = 0; i < requestData.fields().size(); i++) {
                 RequestInfo.Field dataField = requestData.fields().get(i);
                 String fieldName = dataField.name.toLowerCase();
                 ColumnInfo field = fields.get(fieldName);
-//                if (field == null) {
-//                    throw new RuntimeException(
-//                            "Field [%s] doesn't exists in table [%s]".formatted(dataField, info.getTableName()));
-//                }
                 String stringItem = requestData.data().get(i);
+                Object dataItem;
                 if (info.getReferences().containsKey(fieldName)) {
                     ReferenceInfo ref = info.getReferences().get(fieldName);
                     TableInfo refTable = tableMap.get(ref.getTableName().toLowerCase());
-//                    if (refTable == null) {
-//                        throw new RuntimeException("Reference table [%s] doesn't exist".formatted(ref.getTableName()));
-//                    }
-                    field = refTable.getFields().get(ref.getTableColumn().toLowerCase());
-//                    if (field == null) {
-//                        throw new RuntimeException(
-//                                "Field [%s] doen't exists in reference table [%s]".formatted(ref.getTableColumn(),
-//                                        ref.getTableName()));
-//                    }
+                    if (ref.getTableColumn().size() == 1) {
+                        field = refTable.getFields().get(ref.getTableColumn().get(0).toLowerCase());
+                        dataItem = string2object(stringItem, field, dataField);
+                    } else {
+                        dataItem = stringItem;
+                    }
+                } else {
+                    dataItem = string2object(stringItem, field, dataField);
                 }
-                try {
-                    Object dataItem = string2object(stringItem, field);
-                    data.add(dataItem);
-                } catch (Throwable ex) {
-                    throw new RuntimeException(
-                            "Error on field %s [%s], value [%s] conversion: %s"
-                                    .formatted(dataField.pos + 1, dataField.name, stringItem, ex.getMessage()),
-                            ex);
-                }
+                data.add(dataItem);
             }
             return data.toArray(Object[]::new);
         } catch (SQLException ex) {
@@ -246,48 +255,55 @@ public class DBWriter implements IWriter {
      * @param field      column info
      * @return converted value
      */
-    protected Object string2object(String stringItem, ColumnInfo field) {
-        LOG.trace("Convert {} into object", field);
-        Object dataItem;
-        if (stringItem == null) {
-            dataItem = null;
-        } else if (field.isString()) {
-            dataItem = stringItem;
-        } else {
-            dataItem = switch (field.type()) {
-                case Types.SMALLINT ->
-                    Integer.valueOf(stringItem);
-                case Types.BIGINT ->
-                    Long.valueOf(stringItem);
-                case Types.BOOLEAN,
-                        Types.BIT ->
-                    Boolean.valueOf(stringItem);
-                case Types.DATE ->
-                    Date.valueOf(stringItem);
-                case Types.DECIMAL, Types.DOUBLE, Types.FLOAT, Types.NUMERIC, Types.REAL, Types.TINYINT ->
-                    new BigDecimal(stringItem);
-                case Types.INTEGER ->
-                    Integer.valueOf(stringItem);
-                case Types.TIME ->
-                    Time.valueOf(stringItem);
-                case Types.TIMESTAMP ->
-                    stringItem.contains("T") ? Timestamp.from(Instant.parse(stringItem))
-                            : Timestamp.valueOf(stringItem);
-                case Types.TIMESTAMP_WITH_TIMEZONE ->
-                    ZonedDateTime.parse(stringItem);
-                case Types.TIME_WITH_TIMEZONE ->
-                    ZonedDateTime.parse(stringItem);
-                case Types.BINARY, Types.VARBINARY ->
-                    new BigInteger(stringItem, 2).toByteArray();
-                case Types.ARRAY -> {
-                    String[] elems = StringUtils.stripAll(StringUtils.split(stringItem, settings.csvArrayDelimiter()));
-                    yield elems;
-                }
-                default ->
-                    stringItem;
-            };
+    protected Object string2object(String stringItem, ColumnInfo field, RequestInfo.Field dataField) {
+        try {
+            LOG.trace("Convert {} into object", field);
+            Object dataItem;
+            if (stringItem == null) {
+                dataItem = null;
+            } else if (field.isString()) {
+                dataItem = stringItem;
+            } else {
+                dataItem = switch (field.type()) {
+                    case Types.SMALLINT ->
+                        Integer.valueOf(stringItem);
+                    case Types.BIGINT ->
+                        Long.valueOf(stringItem);
+                    case Types.BOOLEAN, Types.BIT ->
+                        Boolean.valueOf(stringItem);
+                    case Types.DATE ->
+                        Date.valueOf(stringItem);
+                    case Types.DECIMAL, Types.DOUBLE, Types.FLOAT, Types.NUMERIC, Types.REAL, Types.TINYINT ->
+                        new BigDecimal(stringItem);
+                    case Types.INTEGER ->
+                        Integer.valueOf(stringItem);
+                    case Types.TIME ->
+                        Time.valueOf(stringItem);
+                    case Types.TIMESTAMP ->
+                        stringItem.contains("T") ? Timestamp.from(Instant.parse(stringItem))
+                                : Timestamp.valueOf(stringItem);
+                    case Types.TIMESTAMP_WITH_TIMEZONE ->
+                        ZonedDateTime.parse(stringItem);
+                    case Types.TIME_WITH_TIMEZONE ->
+                        ZonedDateTime.parse(stringItem);
+                    case Types.BINARY, Types.VARBINARY ->
+                        new BigInteger(stringItem, 2).toByteArray();
+                    case Types.ARRAY -> {
+                        String[] elems = StringUtils
+                                .stripAll(StringUtils.split(stringItem, settings.csvArrayDelimiter()));
+                        yield elems;
+                    }
+                    default ->
+                        stringItem;
+                };
+            }
+            return dataItem;
+        } catch (Throwable ex) {
+            throw new RuntimeException(
+                    "Error on field %s [%s], value [%s] conversion: %s"
+                            .formatted(dataField.pos + 1, dataField.name, stringItem, ex.getMessage()),
+                    ex);
         }
-        return dataItem;
     }
 
 }

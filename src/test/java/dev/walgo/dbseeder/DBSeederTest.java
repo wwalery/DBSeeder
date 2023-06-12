@@ -3,7 +3,6 @@ package dev.walgo.dbseeder;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.walgo.dbseeder.data.ActionType;
-import dev.walgo.dbseeder.data.DataRow;
 import dev.walgo.dbseeder.data.SeedInfo;
 import java.io.File;
 import java.io.FileInputStream;
@@ -17,7 +16,6 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.dbutils.QueryRunner;
@@ -96,7 +94,7 @@ public class DBSeederTest {
         assertThat(info1.getTableName()).isEqualTo("test_table_1");
         assertThat(info1.getAction()).isEqualTo(ActionType.MODIFY);
         assertThat(info1.getKeys()).containsExactlyEntriesOf(Map.of("enum_field", 0));
-        assertThat(info1.getFields()).containsExactly("enum_field", "big_field", "read_only", "is_deleted",
+        assertThat(info1.getFields().keySet()).containsExactly("enum_field", "big_field", "read_only", "is_deleted",
                 "double_field",
                 "char_field", "date_field", "time_field", "timestamp_field", "decimal_field_1", "decimal_field_2",
                 "numeric_field",
@@ -228,24 +226,35 @@ public class DBSeederTest {
         seeder.read();
         seeder.write();
 
-        SeedInfo info1 = seeder.infos.get(0);
-        ArrayList<String> list = new ArrayList<>(info1.getData().get(0).values());
-        list.set(1, "test_new");
-        DataRow row = new DataRow.Builder()
-                .from(info1.getData().get(0))
-                .values(list)
+        settings = new DBSSettings.Builder()
+                .connection(conn)
+                .dbSchema("PUBLIC")
+                .sourceType(SourceType.CSV)
+                .sourceDir("data")
+                .putOnUpdate("test_table_1", (info, row) -> {
+                    String fieldName = "big_field";
+                    if ("test_1".equals(info.getFieldValue(fieldName, row))) {
+                        info.setFieldValue(fieldName, "test_new", row);
+                    }
+                })
+                .putOnInsert("test_table_3", (info, row) -> {
+                    String fieldName = "test_table_1_id";
+                    if ("TEST1##test_1".equals(info.getFieldValue(fieldName, row))) {
+                        info.setFieldValue("test_table_1_id", "TEST1##test_new", row);
+                    }
+                })
                 .build();
-        info1.getData().set(0, row);
+        seeder = new DBSeeder(settings);
+        seeder.read();
 
-        SeedInfo info2 = seeder.infos.get(1);
-        list = new ArrayList<>(info2.getData().get(0).values());
-        list.set(1, "test_new");
-        row = new DataRow.Builder()
-                .from(info2.getData().get(0))
-                .values(list)
-                .build();
-        info2.getData().set(0, row);
-
+//        SeedInfo info1 = seeder.infos.get(0);
+//        info1.setFieldValue("big_field", "test_new", info1.getData().get(0));
+//
+//        SeedInfo info2 = seeder.infos.get(1);
+//        info2.setFieldValue("big_field", "test_new", info2.getData().get(0));
+//
+//        SeedInfo info4 = seeder.infos.get(3);
+//        info4.setFieldValue("test_table_1_id", "TEST1##test_new", info4.getData().get(0));
         seeder.write();
 
         List<Map<String, Object>> result = runner.query(conn, "SELECT * from test_table_1", new MapListHandler());
@@ -294,7 +303,7 @@ public class DBSeederTest {
         assertThat(row3_1.get("read_only")).isEqualTo(30);
         assertThat(row3_1.get("is_deleted")).isEqualTo(1);
         assertThat(row3_1.get("test_table_1_id")).isEqualTo(row1.get("id"));
-        assertThat(row3_1.get("test_table_1_id")).isEqualTo(row2_1.get("id"));
+        assertThat(row3_1.get("test_table_2_id")).isEqualTo(row2_1.get("id"));
 
         Map<String, Object> row3_2 = result3.get(1);
         assertThat(row3_2.get("enum_field_2")).isEqualTo("TEST32");
@@ -310,7 +319,7 @@ public class DBSeederTest {
         assertThat(row3_3.get("read_only")).isEqualTo(30);
         assertThat(row3_3.get("is_deleted")).isEqualTo(1);
         assertThat(row3_3.get("test_table_1_id")).isEqualTo(row1.get("id"));
-        assertThat(row3_3.get("test_table_1_id")).isEqualTo(row2_1.get("id"));
+        assertThat(row3_3.get("test_table_2_id")).isEqualTo(row2_1.get("id"));
 
     }
 

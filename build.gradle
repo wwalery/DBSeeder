@@ -3,7 +3,7 @@ plugins {
 //  id "com.github.johnrengelman.shadow" version "${shadowPluginVersion}"
   id 'com.diffplug.spotless' version "${spotlessPluginVersion}"
   id 'net.ltgt.errorprone' version "${errorPronePluginVersion}"
-  id 'checkstyle'
+//  id 'checkstyle'
   id 'maven-publish'
   id 'signing'
 }

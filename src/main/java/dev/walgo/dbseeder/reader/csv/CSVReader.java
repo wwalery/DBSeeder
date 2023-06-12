@@ -57,7 +57,7 @@ public class CSVReader implements IReader {
                 if (StringUtils.isEmpty(line) || line.startsWith(settings.csvComment())) {
                     continue;
                 }
-                DataRow.Builder row = new DataRow.Builder().sourceNumber(lineNum);
+                DataRow row = new DataRow(lineNum);
                 String[] parts = StringUtils.splitPreserveAllTokens(line, settings.csvDelimiter());
                 if (parts.length != info.getFields().size()) {
                     LOG.warn("Parts = {}", Arrays.asList(parts));
@@ -67,7 +67,7 @@ public class CSVReader implements IReader {
                 for (String part : parts) {
                     row.addValues(StringUtils.trim(part));
                 }
-                data.add(row.build());
+                data.add(row);
             }
         } catch (IOException ex) {
             throw new RuntimeException(ex);
@@ -77,21 +77,22 @@ public class CSVReader implements IReader {
 
     private void parseFieldList(String line, SeedInfo info) {
         String[] parts = StringUtils.split(line, settings.csvDelimiter());
-        List<String> fields = info.getFields();
-        for (String part : parts) {
-            fields.add(StringUtils.trim(part));
+        Map<String, Integer> fields = info.getFields();
+        for (int i = 0; i < parts.length; i++) {
+            String part = parts[i];
+            fields.put(StringUtils.trim(part), i);
         }
     }
 
     private void parseKeyList(String line, SeedInfo info) {
         String[] parts = StringUtils.split(line, CSVSettings.INTERNAL_DELIMITER);
         Map<String, Integer> keys = info.getKeys();
-        List<String> fields = info.getFields();
+        Map<String, Integer> fields = info.getFields();
         for (String part : parts) {
             String key = StringUtils.trim(part);
-            int fieldIdx = fields.indexOf(key);
+            Integer fieldIdx = fields.getOrDefault(key, -1);
             if (fieldIdx < 0) {
-                throw new RuntimeException("Unknoun key [%s]".formatted(key));
+                throw new RuntimeException("Unknown key [%s]".formatted(key));
             }
             keys.put(key, fieldIdx);
         }
@@ -100,7 +101,7 @@ public class CSVReader implements IReader {
     private void parseReferences(String line, SeedInfo info) {
         String[] parts = StringUtils.split(line, CSVSettings.INTERNAL_DELIMITER);
         Map<String, ReferenceInfo> refs = info.getReferences();
-        List<String> fields = info.getFields();
+        Map<String, Integer> fields = info.getFields();
         for (String part : parts) {
             String reference = StringUtils.trim(part);
             Matcher matcher = REFERENCE_REGEX.matcher(reference);
@@ -111,14 +112,15 @@ public class CSVReader implements IReader {
             String fieldName = StringUtils.trim(matcher.group(1));
             String tableName = StringUtils.trim(matcher.group(2));
             String tableField = StringUtils.trim(matcher.group(3));
-            int fieldIdx = fields.indexOf(fieldName);
+            int fieldIdx = fields.getOrDefault(fieldName, -1);
             if (fieldIdx < 0) {
                 throw new RuntimeException("Unknoun column [%s] in reference [%s]".formatted(fieldName, reference));
             }
             ReferenceInfo ref = new ReferenceInfo();
             ref.setFieldName(fieldName);
             ref.setTableName(tableName);
-            ref.setTableColumn(tableField);
+            String[] tableFields = StringUtils.split(tableField, settings.csvMultiRefDelimiter());
+            ref.setTableColumn(Arrays.asList(tableFields));
             ref.setFieldIdx(fieldIdx);
             refs.put(fieldName, ref);
         }

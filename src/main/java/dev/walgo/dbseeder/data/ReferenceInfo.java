@@ -1,10 +1,13 @@
 package dev.walgo.dbseeder.data;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class ReferenceInfo {
 
     private String fieldName;
     private String tableName;
-    private String tableColumn;
+    private List<String> tableColumn;
     private String tableKeyColumn;
     private int fieldIdx;
 
@@ -24,12 +27,23 @@ public class ReferenceInfo {
         this.tableName = tableName;
     }
 
-    public String getTableColumn() {
+    public List<String> getTableColumn() {
         return tableColumn;
     }
 
     public void setTableColumn(String tableColumn) {
-        this.tableColumn = tableColumn;
+        this.tableColumn = List.of(tableColumn);
+    }
+
+    public void setTableColumn(List<String> tableColumns) {
+        this.tableColumn = tableColumns;
+    }
+
+    public void addTableColumn(String tableColumn) {
+        if (this.tableColumn == null) {
+            this.tableColumn = new ArrayList<>();
+        }
+        this.tableColumn.add(tableColumn);
     }
 
     public int getFieldIdx() {

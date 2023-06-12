@@ -60,9 +60,11 @@ INSERT INTO test_table (key, value) VALUES (?,'test value 2')
       * **modify** - check every row in table via **keys**, insert new rows or update existing                                                                                                                                      
   * **references** - describe references to other tables (example: references: test_table_1_id = test_table_1(enum_field)). Usually used for foreign keys. Consists of 3 parts:                                                      
       * column name from 1st line                                                                                                                                                                                                   
-      * referenced table                                                                                                                                                                                                            
-      * referenced column                                                                                                                                                                                                           
-  It means that for referencing column you should use values from a specified column from the referenced table and after processing this value must be replaced with the primary key value from the referenced table  
+      * referenced table
+      * referenced column
+  It means that for referencing column you should use values from a specified column from the referenced table and after processing this value must be replaced with the primary key value from the referenced table
+  There is possible more than one column. Column values joined via two sharps (##). Example: references: test_table_1_id = test_table_1(col1##col2). Value: colValue1##colValue2
+  Use multiple reference columns with caution: current implementation joins fields in check SQL, so this can not use DB indexes.
   
 ### Data description
 
@@ -90,9 +92,28 @@ DBSSettings settings = new DBSSettings.Builder()
     .dbSchema("PUBLIC") // database schema
     .sourceType(SourceType.CSV) // type of source data
     .sourceDir("data") // directory with source data (e.g. /src/main/resources/data)
+    .putOnUpdate("test_table_1", (info, row) -> {
+        String fieldName = "big_field";
+        if ("test_1".equals(info.getFieldValue(fieldName, row))) {
+           info.setFieldValue(fieldName, "test_new", row);
+        }
+    })
+    .putOnInsert("test_table_3", (info, row) -> {
+        String fieldName = "test_table_1_id";
+        if ("TEST1##test_1".equals(info.getFieldValue(fieldName, row))) {
+            info.setFieldValue("test_table_1_id", "TEST1##test_new", row);
+        }
+    })
     .build();                                                                                                                                                                                                           
 
 DBSeeder seeder = new DBSeeder(settings);                                                                                                                                                                                   
 seeder.read(); // read data from seed source
 seeder.write(); // write data into DB
 ```
+
+There are a few listeners for data processing:
+
+    * **onRow** - calls before processing for every row, before all checking
+    * **onInsert** - calls before each insert
+    * **onUpdate** - calls before each update
+
