@@ -113,7 +113,7 @@ seeder.write(); // write data into DB
 
 There are a few listeners for data processing:
 
-    * **onRow** - calls before processing for every row, before all checking
-    * **onInsert** - calls before each insert
-    * **onUpdate** - calls before each update
+  * **onRow** - calls before processing for every row, before all checking
+  * **onInsert** - calls before each insert
+  * **onUpdate** - calls before each update
 
