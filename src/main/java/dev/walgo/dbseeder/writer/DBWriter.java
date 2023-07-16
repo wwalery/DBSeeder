@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.handlers.ScalarHandler;
 import org.apache.commons.lang3.StringUtils;
@@ -122,19 +123,33 @@ public class DBWriter implements IWriter {
         event.accept(info, row);
     }
 
+    private void onEvent(Map<String, Consumer<SeedInfo>> events, SeedInfo info) {
+        if (events == null) {
+            return;
+        }
+        Consumer<SeedInfo> event = events.getOrDefault(info.getTableName(), events.get(DBSSettings.ANY));
+        if (event == null) {
+            return;
+        }
+        event.accept(info);
+    }
+
     @Override
     public Pair<Integer, Integer> write(SeedInfo info) {
         LOG.info("Process table: [{}], resource: [{}]", info.getTableName(), info.getResourceName());
+        onEvent(settings.onStartData(), info);
         checkSeed(info);
         try {
             switch (info.getAction()) {
                 case IGNORE:
+                    onEvent(settings.onEndData(), info);
                     return Pair.of(0, 0);
                 case IGNORE_NOT_EMPTY:
                     Number count = SQL.query(settings.connection(),
                             "SELECT COUNT(*) FROM %s".formatted(info.getTableName()),
                             new ScalarHandler<>());
                     if (count.intValue() > 0) {
+                        onEvent(settings.onEndData(), info);
                         return Pair.of(0, 0);
                     }
                     break;
@@ -184,6 +199,7 @@ public class DBWriter implements IWriter {
                     throw e;
                 }
             }
+            onEvent(settings.onEndData(), info);
             return Pair.of(inserted, updated);
         } catch (SQLException ex) {
             throw new RuntimeException(ex);

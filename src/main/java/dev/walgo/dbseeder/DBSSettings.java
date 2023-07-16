@@ -5,6 +5,7 @@ import dev.walgo.dbseeder.data.SeedInfo;
 import java.sql.Connection;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import org.immutables.value.Value;
 import org.immutables.value.Value.Style.ImplementationVisibility;
 
@@ -61,11 +62,15 @@ public abstract class DBSSettings {
      * 
      * @return
      */
+    public abstract Map<String, Consumer<SeedInfo>> onStartData();
+
     public abstract Map<String, BiConsumer<SeedInfo, DataRow>> onRow();
 
     public abstract Map<String, BiConsumer<SeedInfo, DataRow>> onInsert();
 
     public abstract Map<String, BiConsumer<SeedInfo, DataRow>> onUpdate();
+
+    public abstract Map<String, Consumer<SeedInfo>> onEndData();
 
     public static class Builder extends DBSSettingsBuilder {
     }

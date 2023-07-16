@@ -35,6 +35,14 @@ public class DBSeeder {
         this.settings = settings;
     }
 
+    public List<SeedInfo> getInfos() {
+        return infos;
+    }
+
+    public DBSSettings getSettings() {
+        return settings;
+    }
+
     /**
      * Read seeder data from file.
      *
