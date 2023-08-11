@@ -47,6 +47,12 @@ public class DBSeederTest {
     private static final String FIELD_ADD_4 = "add_field_4";
     private static final String FIELD_ADD_5 = "add_field_5";
 
+    private static final String BIG_FIELD_VALUE = """
+        this is
+          test
+            file.
+        """.stripIndent();
+
     private static final String TYPE_INTEGER = "Integer";
 
     private static Connection conn;
@@ -182,13 +188,13 @@ public class DBSeederTest {
         array1 = ((JDBCArray) row2_2.get("test_array")).getArray();
         assertThat(((Object[]) array1)).containsExactly(21, 22, 23);
         array2 = ((JDBCArray) row2_2.get("test_array2")).getArray();
-        assertThat(((Object[]) array2)).containsExactly("test_char 11", "test char 21", "test char 31");
+        assertThat(((Object[]) array2)).containsExactly("test_char 11", BIG_FIELD_VALUE, "test char 31");
         assertThat(row2_2.get("test_object")).isEqualTo("other test 11");
         assertThat(row2_2.get("is_deleted")).isEqualTo(0);
         assertThat(row2_2.get("test_table_1_id")).isEqualTo(row2.get("id"));
 
         List<Map<String, Object>> result3 = runner.query(conn, "SELECT * from test_table_3", new MapListHandler());
-        assertThat(result3).hasSize(2);
+        assertThat(result3).hasSize(3);
         Map<String, Object> row3_1 = result3.get(0);
         assertThat(row3_1.get("enum_field_2")).isEqualTo("TEST31");
         assertThat(row3_1.get("big_field_2")).isEqualTo("test_32");
@@ -204,6 +210,14 @@ public class DBSeederTest {
         assertThat(row3_2.get("is_deleted")).isEqualTo(0);
         assertThat(row3_2.get("test_table_1_id")).isEqualTo(row2.get("id"));
         assertThat(row3_2.get("test_table_2_id")).isEqualTo(row2_2.get("id"));
+
+        Map<String, Object> row3_3 = result3.get(2);
+        assertThat(row3_3.get("enum_field_2")).isEqualTo("TEST33");
+        assertThat(row3_3.get("big_field_2")).isEqualTo(BIG_FIELD_VALUE);
+        assertThat(row3_3.get("read_only")).isEqualTo(31);
+        assertThat(row3_3.get("is_deleted")).isEqualTo(0);
+        assertThat(row3_3.get("test_table_1_id")).isEqualTo(row2.get("id"));
+        assertThat(row3_3.get("test_table_2_id")).isEqualTo(row2_2.get("id"));
 
     }
 
@@ -290,13 +304,13 @@ public class DBSeederTest {
         array1 = ((JDBCArray) row2_2.get("test_array")).getArray();
         assertThat(((Object[]) array1)).containsExactly(21, 22, 23);
         array2 = ((JDBCArray) row2_2.get("test_array2")).getArray();
-        assertThat(((Object[]) array2)).containsExactly("test_char 11", "test char 21", "test char 31");
+        assertThat(((Object[]) array2)).containsExactly("test_char 11", BIG_FIELD_VALUE, "test char 31");
         assertThat(row2_2.get("test_object")).isEqualTo("other test 11");
         assertThat(row2_2.get("is_deleted")).isEqualTo(0);
         assertThat(row2_2.get("test_table_1_id")).isEqualTo(row2.get("id"));
 
         List<Map<String, Object>> result3 = runner.query(conn, "SELECT * from test_table_3", new MapListHandler());
-        assertThat(result3).hasSize(3);
+        assertThat(result3).hasSize(4);
         Map<String, Object> row3_1 = result3.get(0);
         assertThat(row3_1.get("enum_field_2")).isEqualTo("TEST31");
         assertThat(row3_1.get("big_field_2")).isEqualTo("test_32");
@@ -314,12 +328,20 @@ public class DBSeederTest {
         assertThat(row3_2.get("test_table_2_id")).isEqualTo(row2_2.get("id"));
 
         Map<String, Object> row3_3 = result3.get(2);
-        assertThat(row3_3.get("enum_field_2")).isEqualTo("TEST31");
-        assertThat(row3_3.get("big_field_2")).isEqualTo("test_32");
-        assertThat(row3_3.get("read_only")).isEqualTo(30);
-        assertThat(row3_3.get("is_deleted")).isEqualTo(1);
-        assertThat(row3_3.get("test_table_1_id")).isEqualTo(row1.get("id"));
-        assertThat(row3_3.get("test_table_2_id")).isEqualTo(row2_1.get("id"));
+        assertThat(row3_3.get("enum_field_2")).isEqualTo("TEST33");
+        assertThat(row3_3.get("big_field_2")).isEqualTo(BIG_FIELD_VALUE);
+        assertThat(row3_3.get("read_only")).isEqualTo(31);
+        assertThat(row3_3.get("is_deleted")).isEqualTo(0);
+        assertThat(row3_3.get("test_table_1_id")).isEqualTo(row2.get("id"));
+        assertThat(row3_3.get("test_table_2_id")).isEqualTo(row2_2.get("id"));
+
+        Map<String, Object> row3_4 = result3.get(3);
+        assertThat(row3_4.get("enum_field_2")).isEqualTo("TEST31");
+        assertThat(row3_4.get("big_field_2")).isEqualTo("test_32");
+        assertThat(row3_4.get("read_only")).isEqualTo(30);
+        assertThat(row3_4.get("is_deleted")).isEqualTo(1);
+        assertThat(row3_4.get("test_table_1_id")).isEqualTo(row1.get("id"));
+        assertThat(row3_4.get("test_table_2_id")).isEqualTo(row2_1.get("id"));
 
     }
 

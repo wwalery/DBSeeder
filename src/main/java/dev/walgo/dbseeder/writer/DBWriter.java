@@ -8,8 +8,13 @@ import dev.walgo.dbseeder.data.SeedInfo;
 import dev.walgo.walib.db.ColumnInfo;
 import dev.walgo.walib.db.DBInfo;
 import dev.walgo.walib.db.TableInfo;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.Time;
@@ -264,20 +269,47 @@ public class DBWriter implements IWriter {
 
     }
 
+    private String checkExternal(String item) {
+        if (!item.startsWith(settings.externalValueRef())) {
+            return item;
+        }
+        String fileName = item.substring(settings.externalValueRef().length());
+        String srcDir = settings.sourceDir().endsWith("/") ? settings.sourceDir() : settings.sourceDir() + "/";
+        File dir = new File(srcDir);
+        boolean isExternalResource = dir.exists();
+        if (isExternalResource) {
+            Path path = new File(srcDir + fileName).toPath();
+            try {
+                return Files.readString(path);
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+        } else {
+            try (InputStream stream = getClass().getClassLoader().getResourceAsStream(srcDir + fileName)) {
+                return new String(stream.readAllBytes());
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+        }
+    }
+
     /**
      * Convert string value to object with type specified by column type.
      *
      * @param stringItem text value
      * @param field      column info
+     * @param dataField  field info
      * @return converted value
      */
-    protected Object string2object(String stringItem, ColumnInfo field, RequestInfo.Field dataField) {
+    protected Object string2object(String stringItemValue, ColumnInfo field, RequestInfo.Field dataField) {
         try {
             LOG.trace("Convert {} into object", field);
             Object dataItem;
-            if (stringItem == null) {
-                dataItem = null;
-            } else if (field.isString()) {
+            if (stringItemValue == null) {
+                return null;
+            }
+            String stringItem = checkExternal(stringItemValue);
+            if (field.isString()) {
                 dataItem = stringItem;
             } else {
                 dataItem = switch (field.type()) {
@@ -307,6 +339,9 @@ public class DBWriter implements IWriter {
                     case Types.ARRAY -> {
                         String[] elems = StringUtils
                                 .stripAll(StringUtils.split(stringItem, settings.csvArrayDelimiter()));
+                        for (int i = 0; i < elems.length; i++) {
+                            elems[i] = checkExternal(elems[i]);
+                        }
                         yield elems;
                     }
                     default ->
@@ -317,7 +352,7 @@ public class DBWriter implements IWriter {
         } catch (Throwable ex) {
             throw new RuntimeException(
                     "Error on field %s [%s], value [%s] conversion: %s"
-                            .formatted(dataField.pos + 1, dataField.name, stringItem, ex.getMessage()),
+                            .formatted(dataField.pos + 1, dataField.name, stringItemValue, ex.getMessage()),
                     ex);
         }
     }

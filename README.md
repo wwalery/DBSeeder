@@ -71,7 +71,9 @@ INSERT INTO test_table (key, value) VALUES (?,'test value 2')
 
   You can use data of any type from text value to dates and times (in ISO format). Data types should be recognized automatically.                                                                                                 
 
-  For arrays, you should use **|** delimiter for array items.    
+  For arrays, you should use **|** delimiter for array items.
+  
+  For extract value from external file (e.g. for big columns) you should use **@@** sign. These external files should be inside the source directory.
   
 ## Example of CSV file content
 
@@ -81,6 +83,7 @@ table: test_table_2; keys: enum_field_2; references: test_table_1_id = test_tabl
                                                                                                                                                                                                                                     
 TEST11;test_12;1;11 | 12 | 13;test_char 1 | test char 2 | test char 3;other test;1;TEST1                                                                                                                                            
 TEST12;test_13;2;21 | 22 | 23;test_char 11 | test char 21 | test char 31;other test 11;0;TEST2
+TEST13;test_13;2;21 | 22 | 23;@@dataDir/value.en.txt | @@dataDir/value.de.txt | @@dataDir/value.fr.txt;0;TEST2
 ```   
 
 

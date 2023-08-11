@@ -193,7 +193,7 @@ publishing {
             pom {
                 packaging = "jar"
                 name.set("DBSeeder")
-                url.set("https://github.com/wwalery/dbseeder")
+                url.set("https://github.com/wwalery/DBSeeder")
                 description.set("Flexible DTO Java classes generator. Generate classes from database metadata (schema)")
             
                 licenses {

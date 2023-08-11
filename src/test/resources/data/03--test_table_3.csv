@@ -3,3 +3,4 @@ table: test_table_3; keys: test_table_1_id, enum_field_2; references: test_table
 
 TEST31;test_32;30;1;TEST1##test_1;TEST11
 TEST32;test_33;31;0;TEST2##test_2;TEST12
+TEST33;@@files/testFile.txt;31;0;TEST2##test_2;TEST12

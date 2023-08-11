@@ -58,6 +58,11 @@ public abstract class DBSSettings {
         return "##";
     }
 
+    @Value.Default
+    public String externalValueRef() {
+        return "@@";
+    }
+
     /**
      * 
      * @return
