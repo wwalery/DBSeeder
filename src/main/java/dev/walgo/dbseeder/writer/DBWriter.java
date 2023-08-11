@@ -297,9 +297,9 @@ public class DBWriter implements IWriter {
     /**
      * Convert string value to object with type specified by column type.
      *
-     * @param stringItemValue text value
-     * @param field           column info
-     * @param dataField       field info
+     * @param stringItem text value
+     * @param field      column info
+     * @param dataField  field info
      * @return converted value
      */
     protected Object string2object(String stringItem, ColumnInfo field, RequestInfo.Field dataField) {
