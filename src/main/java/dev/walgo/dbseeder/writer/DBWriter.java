@@ -287,7 +287,8 @@ public class DBWriter implements IWriter {
         } else {
             try (InputStream stream = getClass().getClassLoader().getResourceAsStream(srcDir + fileName)) {
                 return new String(stream.readAllBytes());
-            } catch (IOException ex) {
+            } catch (Exception ex) {
+                LOG.error("Error on reading resource: [{}]", srcDir + fileName);
                 throw new RuntimeException(ex);
             }
         }
@@ -301,16 +302,14 @@ public class DBWriter implements IWriter {
      * @param dataField       field info
      * @return converted value
      */
-    protected Object string2object(String stringItemValue, ColumnInfo field, RequestInfo.Field dataField) {
+    protected Object string2object(String stringItem, ColumnInfo field, RequestInfo.Field dataField) {
         try {
             LOG.trace("Convert {} into object", field);
             Object dataItem;
-            if (stringItemValue == null) {
+            if (stringItem == null) {
                 return null;
-            }
-            String stringItem = checkExternal(stringItemValue);
-            if (field.isString()) {
-                dataItem = stringItem;
+            } else if (field.isString()) {
+                dataItem = checkExternal(stringItem);
             } else {
                 dataItem = switch (field.type()) {
                     case Types.SMALLINT ->
@@ -345,14 +344,14 @@ public class DBWriter implements IWriter {
                         yield elems;
                     }
                     default ->
-                        stringItem;
+                        checkExternal(stringItem);
                 };
             }
             return dataItem;
         } catch (Throwable ex) {
             throw new RuntimeException(
                     "Error on field %s [%s], value [%s] conversion: %s"
-                            .formatted(dataField.pos + 1, dataField.name, stringItemValue, ex.getMessage()),
+                            .formatted(dataField.pos + 1, dataField.name, stringItem, ex.getMessage()),
                     ex);
         }
     }
