@@ -6,6 +6,7 @@ import java.sql.Connection;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import javax.annotation.Nullable;
 import org.immutables.value.Value;
 import org.immutables.value.Value.Style.ImplementationVisibility;
 
@@ -61,6 +62,12 @@ public abstract class DBSSettings {
     @Value.Default
     public String externalValueRef() {
         return "@@";
+    }
+
+    @Nullable
+    @Value.Default
+    public ClassLoader classLoader() {
+        return null;
     }
 
     /**

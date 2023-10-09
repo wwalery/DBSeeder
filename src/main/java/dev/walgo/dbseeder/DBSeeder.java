@@ -5,6 +5,7 @@ import dev.walgo.dbseeder.reader.IReader;
 import dev.walgo.dbseeder.reader.ReaderFactory;
 import dev.walgo.dbseeder.writer.DBWriter;
 import dev.walgo.dbseeder.writer.IWriter;
+import dev.walgo.walib.ResourceLoader;
 import dev.walgo.walib.ResourceUtils;
 import java.io.File;
 import java.io.IOException;
@@ -82,6 +83,12 @@ public class DBSeeder {
                     .filter(it -> it.endsWith(settings.sourceExt()))
                     .sorted()
                     .toList();
+        } else if (settings.classLoader() != null) {
+            files = ResourceLoader.listFromClassLoader(settings.classLoader(), settings.sourceDir())
+                    .stream()
+                    .filter(it -> it.endsWith(settings.sourceExt()))
+                    .sorted()
+                    .toList();
         } else {
             String fileRegex = StringUtils.replace(srcDir, "/", "\\/")
                     + ".+?\\"
@@ -91,13 +98,14 @@ public class DBSeeder {
                     .sorted()
                     .toList();
         }
+        ClassLoader classLoader = settings.classLoader() != null ? settings.classLoader() : getClass().getClassLoader();
         for (String file : files) {
             LOG.info("Read resource [{}]", file);
             String[] nameParts = StringUtils.split(file, File.separatorChar);
             String fileName = nameParts[nameParts.length - 1];
             try (InputStream stream = isExternalResource
                     ? Files.newInputStream(Path.of(srcDir + file))
-                    : getClass().getClassLoader().getResourceAsStream(file)) {
+                    : classLoader.getResourceAsStream(file)) {
                 SeedInfo info = read(fileName, stream);
                 infos.add(info);
             } catch (IOException ex) {

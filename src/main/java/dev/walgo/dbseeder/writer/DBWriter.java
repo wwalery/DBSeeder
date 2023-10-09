@@ -285,7 +285,10 @@ public class DBWriter implements IWriter {
                 throw new RuntimeException(ex);
             }
         } else {
-            try (InputStream stream = getClass().getClassLoader().getResourceAsStream(srcDir + fileName)) {
+            ClassLoader classLoader = settings.classLoader() != null
+                    ? settings.classLoader()
+                    : getClass().getClassLoader();
+            try (InputStream stream = classLoader.getResourceAsStream(srcDir + fileName)) {
                 return new String(stream.readAllBytes());
             } catch (Exception ex) {
                 LOG.error("Error on reading resource: [{}]", srcDir + fileName);
