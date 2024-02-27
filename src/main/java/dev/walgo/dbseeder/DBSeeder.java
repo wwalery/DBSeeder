@@ -90,7 +90,7 @@ public class DBSeeder {
                     .sorted()
                     .toList();
         } else {
-            String fileRegex = StringUtils.replace(srcDir, "/", "\\/")
+            String fileRegex = "^" + StringUtils.replace(srcDir, "/", "\\/")
                     + ".+?\\"
                     + settings.sourceExt();
             files = ResourceUtils.findResourceFiles(fileRegex)
