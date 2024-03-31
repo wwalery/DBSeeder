@@ -35,10 +35,17 @@ dependencies {
   api "org.apache.commons:commons-lang3:${commonsLangVersion}"
   api "org.apache.commons:commons-collections4:${commonsCollectionsVersion}"
   api "commons-dbutils:commons-dbutils:${dbUtilsVersion}"
-  implementation "dev.walgo:walib:0.6.0"
-//  implementation files("/home/walery/dev/dev.walgo/walib/build/libs/walib-0.6.0.jar")
+  implementation "dev.walgo:walib:0.7.0"
+//  implementation files("/home/walery/dev/dev.walgo/walib/build/libs/walib-0.7.0.jar")
 
   errorprone "com.google.errorprone:error_prone_core:${errorProneVersion}"
+
+  annotationProcessor "com.google.auto.service:auto-service:${autoServiceVersion}"
+  compileOnly "com.google.auto.service:auto-service:${autoServiceVersion}"
+  testCompileOnly "com.google.auto.service:auto-service:${autoServiceVersion}"
+  
+  compileOnly "org.postgresql:postgresql:${postgreSQLDriverVersion}"
+
 
   testImplementation 'org.junit.jupiter:junit-jupiter:5.9.1'
   testImplementation "org.assertj:assertj-core:${assertjVersion}"
@@ -49,6 +56,9 @@ dependencies {
 
   testImplementation "ch.qos.logback:logback-classic:${logbackVersion}"
   testImplementation "ch.qos.logback:logback-core:${logbackVersion}"
+  testImplementation "org.testcontainers:postgresql:${testcontainersPostgresVersion}"
+  testImplementation "org.postgresql:postgresql:${postgreSQLDriverVersion}"
+
 
 
 }

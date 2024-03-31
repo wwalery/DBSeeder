@@ -2,6 +2,7 @@ package dev.walgo.dbseeder.writer;
 
 import dev.walgo.dbseeder.data.AllowNulls;
 import java.util.List;
+import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.immutables.value.Value;
 
 @Value.Immutable
@@ -26,6 +27,11 @@ public abstract class RequestInfo {
         public Field(String name, int pos) {
             this.name = name;
             this.pos = pos;
+        }
+
+        @Override
+        public String toString() {
+            return ReflectionToStringBuilder.reflectionToString(this);
         }
 
     }

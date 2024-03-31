@@ -4,6 +4,7 @@ class CSVSettings {
 
     static char INTERNAL_DELIMITER = ',';
 
+    static final String S_NAME_ID = "id";
     static final String S_NAME_KEY = "keys";
     static final String S_NAME_ACTION = "action";
     static final String S_NAME_REFERENCES = "references";

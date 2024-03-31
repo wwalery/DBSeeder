@@ -127,8 +127,8 @@ public class CSVReader implements IReader {
     }
 
     private void parseSettings(String line, SeedInfo info) {
-        String[] settings = StringUtils.split(line, this.settings.csvDelimiter());
-        for (String setting : settings) {
+        String[] settingsArray = StringUtils.split(line, this.settings.csvDelimiter());
+        for (String setting : settingsArray) {
             String[] parts = StringUtils.split(setting, CSVSettings.S_DELIMITER, 2);
             if (parts.length != 2) {
                 throw new RuntimeException("Parameter [%s] doesn't have 2 parts (more or less)".formatted(setting));

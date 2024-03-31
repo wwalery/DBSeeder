@@ -6,10 +6,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 
 public class SeedInfo {
 
     private String tableName;
+
     private String resourceName;
     private ActionType action;
     private String extraCondition;
@@ -17,6 +19,7 @@ public class SeedInfo {
     private final Map<String, Integer> keys;
     private final Map<String, ReferenceInfo> references;
     private final List<DataRow> data;
+    private List<String> tableKeys;
 
     public SeedInfo() {
         this.fields = new LinkedHashMap<>();
@@ -88,6 +91,19 @@ public class SeedInfo {
 
     public void setResourceName(String resourceName) {
         this.resourceName = resourceName;
+    }
+
+    public List<String> getTableKeys() {
+        return tableKeys;
+    }
+
+    public void setTableKeys(List<String> tableKeys) {
+        this.tableKeys = tableKeys;
+    }
+
+    @Override
+    public String toString() {
+        return ReflectionToStringBuilder.reflectionToString(this);
     }
 
 }

@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 
 public class SQLGenerator {
@@ -50,6 +51,9 @@ public class SQLGenerator {
         });
         String sql = "INSERT INTO %s (%s) VALUES (%s)".formatted(info.getTableName(),
                 fieldNames.toString(), insertVars.toString());
+        if (CollectionUtils.isNotEmpty(info.getTableKeys())) {
+            sql += " RETURNING " + StringUtils.join(info.getTableKeys(), ',');
+        }
         builder.sql(sql);
         return builder.build();
     }

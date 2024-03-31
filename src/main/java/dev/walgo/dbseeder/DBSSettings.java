@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
+import org.apache.commons.lang3.function.TriConsumer;
 import org.immutables.value.Value;
 import org.immutables.value.Value.Style.ImplementationVisibility;
 
@@ -14,7 +15,7 @@ import org.immutables.value.Value.Style.ImplementationVisibility;
 @Value.Style(visibility = ImplementationVisibility.PRIVATE, overshadowImplementation = true, jdkOnly = true)
 public abstract class DBSSettings {
 
-    public static final String ANY = "*";
+    public static final String ANY_TABLE = "*";
 
     public abstract Connection connection();
 
@@ -83,6 +84,8 @@ public abstract class DBSSettings {
     public abstract Map<String, BiConsumer<SeedInfo, DataRow>> onUpdate();
 
     public abstract Map<String, Consumer<SeedInfo>> onEndData();
+
+    public abstract Map<String, TriConsumer<SeedInfo, DataRow, Map<String, Object>>> onAfterInsert();
 
     public static class Builder extends DBSSettingsBuilder {
     }

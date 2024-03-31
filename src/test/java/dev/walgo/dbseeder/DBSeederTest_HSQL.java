@@ -18,6 +18,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.handlers.MapListHandler;
 import org.hsqldb.cmdline.SqlFile;
@@ -28,10 +29,11 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 
-public class DBSeederTest {
+public class DBSeederTest_HSQL {
 
     private static final String DB_USER = "sa";
     private static final String DB_URL = "jdbc:hsqldb:mem:testdb";
+    private static final String DB_SQL = "src/test/resources/db/create_db_hsql.sql";
     private static final String TABLE_2 = "test_table_2";
     private static final String TABLE_1 = "test_table_1";
     private static final String FIELD_OBJECT = "test_object";
@@ -60,7 +62,7 @@ public class DBSeederTest {
     @BeforeAll
     public static void before() throws SQLException, IOException, SqlToolError {
         conn = DriverManager.getConnection(DB_URL, DB_USER, "");
-        try (InputStream inputStream = new FileInputStream("src/test/resources/db/create_db.sql")) {
+        try (InputStream inputStream = new FileInputStream(DB_SQL)) {
             SqlFile sqlFile = new SqlFile(
                     new InputStreamReader(inputStream),
                     "init",
@@ -112,15 +114,20 @@ public class DBSeederTest {
     @Test
     @Order(20)
     public void testWrite() throws Exception {
+        final AtomicBoolean isAnythingInserted = new AtomicBoolean(false);
+
         DBSSettings settings = new DBSSettings.Builder()
                 .connection(conn)
                 .dbSchema("PUBLIC")
                 .sourceType(SourceType.CSV)
                 .sourceDir("data")
+                .putOnAfterInsert(DBSSettings.ANY_TABLE, (seed, row, result) -> isAnythingInserted.set(true))
                 .build();
         DBSeeder seeder = new DBSeeder(settings);
         seeder.read();
         seeder.write();
+
+        assertThat(isAnythingInserted).isFalse();
 
         QueryRunner runner = new QueryRunner();
         List<Map<String, Object>> result = runner.query(conn, "SELECT * from test_table_1", new MapListHandler());

@@ -3,12 +3,11 @@ package dev.walgo.dbseeder.writer;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.walgo.dbseeder.DBSSettings;
+import dev.walgo.dbseeder.PostgreSQLTest;
 import dev.walgo.dbseeder.SourceType;
 import dev.walgo.dbseeder.data.DataRow;
 import dev.walgo.dbseeder.data.ReferenceInfo;
 import dev.walgo.dbseeder.data.SeedInfo;
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -17,17 +16,12 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-public class SQLGeneratorTest {
-
-    private static final String DB_USER = "sa";
-    private static final String DB_URL = "jdbc:hsqldb:mem:testdb";
+public class SQLGeneratorTest_Postgres extends PostgreSQLTest {
 
     private static DBSSettings settings;
-    private static Connection conn;
 
     @BeforeAll
     public static void init() throws SQLException {
-        conn = DriverManager.getConnection(DB_URL, DB_USER, "");
         settings = new DBSSettings.Builder()
                 .connection(conn)
                 .dbSchema("PUBLIC")
@@ -39,6 +33,7 @@ public class SQLGeneratorTest {
     private SeedInfo makeInfo1() {
         SeedInfo info = new SeedInfo();
         info.setTableName("test");
+        info.setTableKeys(List.of("id"));
         info.getKeys().put("test_2", 1);
 
         info.getFields().put("test_1", 0);
@@ -99,7 +94,7 @@ public class SQLGeneratorTest {
         SQLGenerator instance = new SQLGenerator(List.of(info), settings);
         RequestInfo result = instance.insert(info, data);
         assertThat(result).isNotNull();
-        assertThat(result.sql()).isEqualTo("INSERT INTO test (test_1, test_2, test_3) VALUES (?, ?, ?)");
+        assertThat(result.sql()).isEqualTo("INSERT INTO test (test_1, test_2, test_3) VALUES (?, ?, ?) RETURNING id");
         assertThat(result.data()).containsExactlyElementsOf(data.values());
         List<String> testFields = result.fields().stream().map(it -> it.name).toList();
         assertThat(testFields).containsExactlyElementsOf(info.getFields().keySet());
@@ -112,7 +107,7 @@ public class SQLGeneratorTest {
         SQLGenerator instance = new SQLGenerator(List.of(info), settings);
         RequestInfo result = instance.insert(info, data);
         assertThat(result).isNotNull();
-        assertThat(result.sql()).isEqualTo("INSERT INTO test (test_1, test_2, test_3) VALUES (?, -2, ?)");
+        assertThat(result.sql()).isEqualTo("INSERT INTO test (test_1, test_2, test_3) VALUES (?, -2, ?) RETURNING id");
         assertThat(result.data()).containsExactlyElementsOf(List.of("1", "3"));
         Map<String, Integer> fields = new LinkedHashMap<>(info.getFields());
         fields.remove("test_2");

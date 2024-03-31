@@ -107,6 +107,10 @@ DBSSettings settings = new DBSSettings.Builder()
             info.setFieldValue("test_table_1_id", "TEST1##test_new", row);
         }
     })
+    .putOnAfterInsert("test_table_3", (info, row, insertResult) -> {
+        Integer id = (Integer) insertResult.get("id");
+        LOG.trace("Inserted new record with id = {}", id);
+    })
     .build();                                                                                                                                                                                                           
 
 DBSeeder seeder = new DBSeeder(settings);                                                                                                                                                                                   
@@ -116,7 +120,7 @@ seeder.write(); // write data into DB
 
 There are a few listeners for data processing:
 
-  * **onRow** - calls before processing for every row, before all checking
-  * **onInsert** - calls before each insert
-  * **onUpdate** - calls before each update
-
+  * **onRow** - called before processing for every row, before all checking
+  * **onInsert** - called before each insert
+  * **onUpdate** - called before each update
+  * **onAfterInsert** - called after each insert. Used only for DBs with INSERT that support the RETURNING clause. Currently only PostgreSQL is supported

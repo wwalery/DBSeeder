@@ -5,8 +5,11 @@ import dev.walgo.dbseeder.data.ActionType;
 import dev.walgo.dbseeder.data.DataRow;
 import dev.walgo.dbseeder.data.ReferenceInfo;
 import dev.walgo.dbseeder.data.SeedInfo;
+import dev.walgo.dbseeder.db.Database;
+import dev.walgo.dbseeder.db.UnknownDatabase;
 import dev.walgo.walib.db.ColumnInfo;
 import dev.walgo.walib.db.DBInfo;
+import dev.walgo.walib.db.DBUtils;
 import dev.walgo.walib.db.TableInfo;
 import java.io.File;
 import java.io.IOException;
@@ -26,11 +29,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import org.apache.commons.dbutils.QueryRunner;
+import org.apache.commons.dbutils.ResultSetHandler;
+import org.apache.commons.dbutils.handlers.MapHandler;
 import org.apache.commons.dbutils.handlers.ScalarHandler;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.function.TriConsumer;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,17 +46,38 @@ public class DBWriter implements IWriter {
 
     private static final Logger LOG = LoggerFactory.getLogger(DBWriter.class);
     private static final QueryRunner SQL = new QueryRunner();
+    private static final ResultSetHandler<Map<String, Object>> insertHandler = new MapHandler();
 
     private final List<SeedInfo> infos;
 //    private final String schema;
     private final DBSSettings settings;
     private final DBInfo dbInfo;
+    private Database database;
 
     public DBWriter(List<SeedInfo> infos, DBSSettings settings) {
         this.infos = infos;
 //        this.schema = schema;
         this.settings = settings;
         this.dbInfo = new DBInfo(settings.connection(), null, settings.dbSchema(), null);
+        final ServiceLoader<Database> databases = ServiceLoader.load(Database.class);
+        String url = null;
+        try {
+            url = settings.connection().getMetaData().getURL();
+        } catch (SQLException ex) {
+            LOG.error("Can't find database URL", ex);
+        }
+        if (url != null) {
+            for (Database db : databases) {
+                if (db.handlesJDBCUrl(url)) {
+                    this.database = db;
+                    break;
+                }
+            }
+        }
+        if (this.database == null) {
+            this.database = new UnknownDatabase();
+        }
+        this.database.setConnecton(settings.connection());
     }
 
     private void checkSeed(SeedInfo info) {
@@ -58,6 +86,9 @@ public class DBWriter implements IWriter {
             TableInfo table = tableMap.get(info.getTableName().toLowerCase());
             if (table == null) {
                 throw new RuntimeException("Table [%s] doesn't exist".formatted(info.getTableName()));
+            }
+            if (database.insertHasReturning()) {
+                info.setTableKeys(table.getKeys());
             }
             Map<String, ColumnInfo> fields = table.getFields();
             info.getFields().forEach((dataField, idx) -> {
@@ -121,7 +152,7 @@ public class DBWriter implements IWriter {
             return;
         }
         BiConsumer<SeedInfo, DataRow> event = events.getOrDefault(info.getTableName(),
-                events.get(DBSSettings.ANY));
+                events.get(DBSSettings.ANY_TABLE));
         if (event == null) {
             return;
         }
@@ -132,11 +163,24 @@ public class DBWriter implements IWriter {
         if (events == null) {
             return;
         }
-        Consumer<SeedInfo> event = events.getOrDefault(info.getTableName(), events.get(DBSSettings.ANY));
+        Consumer<SeedInfo> event = events.getOrDefault(info.getTableName(), events.get(DBSSettings.ANY_TABLE));
         if (event == null) {
             return;
         }
         event.accept(info);
+    }
+
+    private void onEvent(Map<String, TriConsumer<SeedInfo, DataRow, Map<String, Object>>> events, SeedInfo info,
+            DataRow row, Map<String, Object> result) {
+        if (events == null) {
+            return;
+        }
+        TriConsumer<SeedInfo, DataRow, Map<String, Object>> event = events.getOrDefault(info.getTableName(),
+                events.get(DBSSettings.ANY_TABLE));
+        if (event == null) {
+            return;
+        }
+        event.accept(info, row, result);
     }
 
     @Override
@@ -179,7 +223,10 @@ public class DBWriter implements IWriter {
                             if (!recordExists) {
                                 onEvent(settings.onInsert(), info, data);
                                 RequestInfo insertData = generator.insert(info, data);
-                                update(info, insertData);
+                                Map<String, Object> insertResult = insert(info, insertData);
+                                if (database.insertHasReturning()) {
+                                    onEvent(settings.onAfterInsert(), info, data, insertResult);
+                                }
                                 inserted++;
                             }
                             break;
@@ -187,7 +234,10 @@ public class DBWriter implements IWriter {
                             if (!recordExists) {
                                 onEvent(settings.onInsert(), info, data);
                                 RequestInfo insertData = generator.insert(info, data);
-                                update(info, insertData);
+                                Map<String, Object> insertResult = insert(info, insertData);
+                                if (database.insertHasReturning()) {
+                                    onEvent(settings.onAfterInsert(), info, data, insertResult);
+                                }
                                 inserted++;
                             } else {
                                 onEvent(settings.onUpdate(), info, data);
@@ -219,6 +269,18 @@ public class DBWriter implements IWriter {
         }
         try {
             return SQL.query(settings.connection(), requestData.sql(), new ScalarHandler<>(), data);
+        } catch (SQLException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    private Map<String, Object> insert(SeedInfo info, RequestInfo requestData) {
+        Object[] data = requestDataTypefication(info, requestData);
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("{} -> {}", requestData.sql(), Arrays.toString(data));
+        }
+        try {
+            return SQL.insert(settings.connection(), requestData.sql(), insertHandler, data);
         } catch (SQLException ex) {
             throw new RuntimeException(ex);
         }
@@ -297,6 +359,36 @@ public class DBWriter implements IWriter {
         }
     }
 
+    protected Object string2object(String stringItem, int fieldType, String fieldTypeName) {
+        Object dataItem;
+        if (stringItem == null) {
+            return null;
+        } else if (DBUtils.isStringField(fieldType)) {
+            dataItem = checkExternal(stringItem);
+        } else {
+            dataItem = switch (fieldType) {
+                case Types.SMALLINT -> Integer.valueOf(stringItem);
+                case Types.BIGINT -> Long.valueOf(stringItem);
+                case Types.BOOLEAN, Types.BIT -> Boolean.valueOf(stringItem);
+                case Types.DATE -> Date.valueOf(stringItem);
+                case Types.DECIMAL, Types.DOUBLE, Types.FLOAT, Types.NUMERIC, Types.REAL, Types.TINYINT ->
+                    new BigDecimal(stringItem);
+                case Types.INTEGER -> Integer.valueOf(stringItem);
+                case Types.TIME -> Time.valueOf(stringItem);
+                case Types.TIMESTAMP -> stringItem.contains("T")
+                        ? Timestamp.from(Instant.parse(stringItem))
+                        : Timestamp.valueOf(stringItem);
+                case Types.TIMESTAMP_WITH_TIMEZONE -> ZonedDateTime.parse(stringItem);
+                case Types.TIME_WITH_TIMEZONE -> ZonedDateTime.parse(stringItem);
+                case Types.BINARY, Types.VARBINARY -> new BigInteger(stringItem, 2).toByteArray();
+                case Types.OTHER -> database.valueFromString(fieldTypeName, stringItem);
+                case Types.ARRAY -> throw new RuntimeException("Unreacheable case");
+                default -> checkExternal(stringItem);
+            };
+        }
+        return dataItem;
+    }
+
     /**
      * Convert string value to object with type specified by column type.
      *
@@ -311,44 +403,28 @@ public class DBWriter implements IWriter {
             Object dataItem;
             if (stringItem == null) {
                 return null;
-            } else if (field.isString()) {
-                dataItem = checkExternal(stringItem);
-            } else {
-                dataItem = switch (field.type()) {
-                    case Types.SMALLINT ->
-                        Integer.valueOf(stringItem);
-                    case Types.BIGINT ->
-                        Long.valueOf(stringItem);
-                    case Types.BOOLEAN, Types.BIT ->
-                        Boolean.valueOf(stringItem);
-                    case Types.DATE ->
-                        Date.valueOf(stringItem);
-                    case Types.DECIMAL, Types.DOUBLE, Types.FLOAT, Types.NUMERIC, Types.REAL, Types.TINYINT ->
-                        new BigDecimal(stringItem);
-                    case Types.INTEGER ->
-                        Integer.valueOf(stringItem);
-                    case Types.TIME ->
-                        Time.valueOf(stringItem);
-                    case Types.TIMESTAMP ->
-                        stringItem.contains("T") ? Timestamp.from(Instant.parse(stringItem))
-                                : Timestamp.valueOf(stringItem);
-                    case Types.TIMESTAMP_WITH_TIMEZONE ->
-                        ZonedDateTime.parse(stringItem);
-                    case Types.TIME_WITH_TIMEZONE ->
-                        ZonedDateTime.parse(stringItem);
-                    case Types.BINARY, Types.VARBINARY ->
-                        new BigInteger(stringItem, 2).toByteArray();
-                    case Types.ARRAY -> {
-                        String[] elems = StringUtils
-                                .stripAll(StringUtils.split(stringItem, settings.csvArrayDelimiter()));
-                        for (int i = 0; i < elems.length; i++) {
-                            elems[i] = checkExternal(elems[i]);
+            }
+            if (Types.ARRAY == field.type()) {
+                String[] strElems = StringUtils.stripAll(StringUtils.split(stringItem, settings.csvArrayDelimiter()));
+                for (int i = 0; i < strElems.length; i++) {
+                    strElems[i] = checkExternal(strElems[i]);
+                }
+                if (strElems.length == 0) {
+                    dataItem = strElems;
+                } else {
+                    int type = database.getSqlType(field.typeName());
+                    if (DBUtils.isStringField(type)) {
+                        dataItem = strElems;
+                    } else {
+                        Object[] elems = new Object[strElems.length];
+                        for (int i = 0; i < strElems.length; i++) {
+                            elems[i] = string2object(strElems[i], type, field.typeName());
                         }
-                        yield elems;
+                        dataItem = settings.connection().createArrayOf(field.typeName(), elems);
                     }
-                    default ->
-                        checkExternal(stringItem);
-                };
+                }
+            } else {
+                dataItem = string2object(stringItem, field.type(), field.typeName());
             }
             return dataItem;
         } catch (Throwable ex) {
