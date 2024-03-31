@@ -1,14 +1,8 @@
 package dev.walgo.dbseeder.db;
 
-import java.sql.Connection;
 import java.sql.Types;
 
-public class UnknownDatabase implements Database {
-
-    @Override
-    public void setConnecton(Connection conn) {
-        // do nothing
-    }
+public class UnknownDatabase extends Database {
 
     @Override
     public boolean insertHasReturning() {

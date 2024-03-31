@@ -9,17 +9,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @AutoService(Database.class)
-public class PostgreSQLDatabase implements Database {
+public class PostgreSQLDatabase extends Database {
 
     private static final Logger LOG = LoggerFactory.getLogger(PostgreSQLDatabase.class);
 
-    private PgConnection conn;
-
     @Override
     public void setConnecton(Connection conn) {
-        if (conn instanceof PgConnection) {
-            this.conn = (PgConnection) conn;
-        } else {
+        super.setConnecton(conn);
+        if (!(conn instanceof PgConnection)) {
             throw new UnsupportedOperationException(
                     "Connection of type [%s] is not PostgreSQL connection".formatted(conn.getClass()));
         }
@@ -42,7 +39,7 @@ public class PostgreSQLDatabase implements Database {
         }
         String type = typeName.startsWith("_") ? typeName.substring(1) : typeName;
         try {
-            return conn.getTypeInfo().getSQLType(type);
+            return ((PgConnection) conn).getTypeInfo().getSQLType(type);
         } catch (SQLException ex) {
             LOG.error("Can't extract JDBC type from native type: [{}]", typeName, ex);
             return Types.VARCHAR;

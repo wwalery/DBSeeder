@@ -1,13 +1,22 @@
 package dev.walgo.dbseeder.db;
 
+import io.agroal.pool.wrapper.ConnectionWrapper;
 import java.sql.Connection;
 
 /**
  * Database custom parameters
  */
-public interface Database {
+public abstract class Database {
 
-    void setConnecton(Connection conn);
+    protected Connection conn;
+
+    public void setConnecton(Connection conn) {
+        if (conn instanceof ConnectionWrapper agroal) {
+            this.conn = agroal.getHandler().rawConnection();
+        } else {
+            this.conn = conn;
+        }
+    }
 
     /**
      * Is given JDBC URL is supported by this database?
@@ -15,14 +24,14 @@ public interface Database {
      * @param url JDBC URL
      * @return true if URL supported
      */
-    boolean handlesJDBCUrl(String url);
+    public abstract boolean handlesJDBCUrl(String url);
 
     /**
      * Is RETURNING part is supported in INSERT clause?
      * 
      * @return true if supported
      */
-    boolean insertHasReturning();
+    public abstract boolean insertHasReturning();
 
     /**
      * Get JDBC type from custom field name.
@@ -30,8 +39,8 @@ public interface Database {
      * @param typeName
      * @return
      */
-    int getSqlType(String typeName);
+    public abstract int getSqlType(String typeName);
 
-    Object valueFromString(String typeName, String stringValue);
+    public abstract Object valueFromString(String typeName, String stringValue);
 
 }

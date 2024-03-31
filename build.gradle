@@ -44,7 +44,7 @@ dependencies {
   compileOnly "com.google.auto.service:auto-service:${autoServiceVersion}"
   testCompileOnly "com.google.auto.service:auto-service:${autoServiceVersion}"
   
-  compileOnly "org.postgresql:postgresql:${postgreSQLDriverVersion}"
+//  compileOnly "org.apache.tomcat:tomcat-jdbc:${tomcatJdbcVersion}"
 
 
   testImplementation 'org.junit.jupiter:junit-jupiter:5.9.1'
@@ -57,7 +57,11 @@ dependencies {
   testImplementation "ch.qos.logback:logback-classic:${logbackVersion}"
   testImplementation "ch.qos.logback:logback-core:${logbackVersion}"
   testImplementation "org.testcontainers:postgresql:${testcontainersPostgresVersion}"
+  
+  compileOnly "org.postgresql:postgresql:${postgreSQLDriverVersion}"
   testImplementation "org.postgresql:postgresql:${postgreSQLDriverVersion}"
+  compileOnly "io.agroal:agroal-pool:${agroalVersion}"
+  testImplementation "io.agroal:agroal-pool:${agroalVersion}"
 
 
 
