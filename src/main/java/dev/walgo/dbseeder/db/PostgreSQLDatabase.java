@@ -16,7 +16,7 @@ public class PostgreSQLDatabase extends Database {
     @Override
     public void setConnecton(Connection conn) {
         super.setConnecton(conn);
-        if (!(conn instanceof PgConnection)) {
+        if (!(this.conn instanceof PgConnection)) {
             throw new UnsupportedOperationException(
                     "Connection of type [%s] is not PostgreSQL connection".formatted(conn.getClass()));
         }
