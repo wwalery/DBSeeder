@@ -15,51 +15,58 @@ public class ReferenceInfo {
         return fieldName;
     }
 
-    public void setFieldName(String fieldName) {
+    public ReferenceInfo setFieldName(String fieldName) {
         this.fieldName = fieldName;
+        return this;
     }
 
     public String getTableName() {
         return tableName;
     }
 
-    public void setTableName(String tableName) {
+    public ReferenceInfo setTableName(String tableName) {
         this.tableName = tableName;
+        return this;
     }
 
     public List<String> getTableColumn() {
         return tableColumn;
     }
 
-    public void setTableColumn(String tableColumn) {
+    public ReferenceInfo setTableColumn(String... tableColumn) {
         this.tableColumn = List.of(tableColumn);
+        return this;
     }
-
-    public void setTableColumn(List<String> tableColumns) {
+    
+    public ReferenceInfo setTableColumn(List<String> tableColumns) {
         this.tableColumn = tableColumns;
+        return this;
     }
 
-    public void addTableColumn(String tableColumn) {
+    public ReferenceInfo addTableColumn(String tableColumn) {
         if (this.tableColumn == null) {
             this.tableColumn = new ArrayList<>();
         }
         this.tableColumn.add(tableColumn);
+        return this;
     }
 
     public int getFieldIdx() {
         return fieldIdx;
     }
 
-    public void setFieldIdx(int fieldIdx) {
+    public ReferenceInfo setFieldIdx(int fieldIdx) {
         this.fieldIdx = fieldIdx;
+        return this;
     }
 
     public String getTableKeyColumn() {
         return tableKeyColumn;
     }
 
-    public void setTableKeyColumn(String tableKeyColumn) {
+    public ReferenceInfo setTableKeyColumn(String tableKeyColumn) {
         this.tableKeyColumn = tableKeyColumn;
+        return this;
     }
 
     @Override
