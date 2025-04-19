@@ -37,7 +37,7 @@ public class ReferenceInfo {
         this.tableColumn = List.of(tableColumn);
         return this;
     }
-    
+
     public ReferenceInfo setTableColumn(List<String> tableColumns) {
         this.tableColumn = tableColumns;
         return this;

@@ -14,8 +14,8 @@ public class PostgreSQLDatabase extends Database {
     private static final Logger LOG = LoggerFactory.getLogger(PostgreSQLDatabase.class);
 
     @Override
-    public void setConnecton(Connection conn) {
-        super.setConnecton(conn);
+    public void setConnection(Connection conn) {
+        super.setConnection(conn);
         if (!(this.conn instanceof PgConnection)) {
             throw new UnsupportedOperationException(
                     "Connection of type [%s] is not PostgreSQL connection".formatted(conn.getClass()));

@@ -13,6 +13,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -114,7 +115,7 @@ public class CSVReader implements IReader {
             String tableField = StringUtils.trim(matcher.group(3));
             int fieldIdx = fields.getOrDefault(fieldName, -1);
             if (fieldIdx < 0) {
-                throw new RuntimeException("Unknoun column [%s] in reference [%s]".formatted(fieldName, reference));
+                throw new RuntimeException("Unknown column [%s] in reference [%s]".formatted(fieldName, reference));
             }
             ReferenceInfo ref = new ReferenceInfo();
             ref.setFieldName(fieldName);
@@ -135,7 +136,7 @@ public class CSVReader implements IReader {
             }
             switch (StringUtils.trim(parts[0])) {
                 case CSVSettings.S_NAME_ACTION:
-                    ActionType action = ActionType.valueOf(StringUtils.trim(parts[1]).toUpperCase());
+                    ActionType action = ActionType.valueOf(StringUtils.trim(parts[1]).toUpperCase(Locale.ROOT));
                     info.setAction(action);
                     break;
                 case CSVSettings.S_NAME_KEY:

@@ -1,10 +1,8 @@
 package dev.walgo.dbseeder;
 
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import org.hsqldb.cmdline.SqlToolError;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -30,12 +28,12 @@ public class PostgreSQLTest {
     protected static Connection conn;
 
     @BeforeAll
-    public static void before() throws SQLException, IOException, SqlToolError {
+    public static void before() throws SQLException {
         conn = DriverManager.getConnection(dbContainer.getJdbcUrl(), DB_USER, DB_PASSWORD);
     }
 
     @AfterAll
-    public static void after() throws SQLException, IOException {
+    public static void after() throws SQLException {
         conn.close();
     }
 

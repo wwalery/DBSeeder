@@ -21,20 +21,20 @@ import org.postgresql.jdbc.PgArray;
 
 public class DBSeederTest_Postgres extends PostgreSQLTest {
 
-    private static final String TABLE_2 = "test_table_2";
-    private static final String TABLE_1 = "test_table_1";
-    private static final String FIELD_OBJECT = "test_object";
-    private static final String FIELD_ARRAY = "test_array";
-    private static final String FIELD_ENUM = "enum_field";
-    private static final String FIELD_ENUM_2 = "enum_field_2";
-    private static final String FIELD_INT = "read_only";
-    private static final String DECIMAL_FIELD_1 = "decimal_field_1";
-    private static final String DECIMAL_FIELD_2 = "decimal_field_2";
-    private static final String FIELD_ADD_1 = "add_field";
-    private static final String FIELD_ADD_2 = "add_field_2";
-    private static final String FIELD_ADD_3 = "add_field_3";
-    private static final String FIELD_ADD_4 = "add_field_4";
-    private static final String FIELD_ADD_5 = "add_field_5";
+//    private static final String TABLE_2 = "test_table_2";
+//    private static final String TABLE_1 = "test_table_1";
+//    private static final String FIELD_OBJECT = "test_object";
+//    private static final String FIELD_ARRAY = "test_array";
+//    private static final String FIELD_ENUM = "enum_field";
+//    private static final String FIELD_ENUM_2 = "enum_field_2";
+//    private static final String FIELD_INT = "read_only";
+//    private static final String DECIMAL_FIELD_1 = "decimal_field_1";
+//    private static final String DECIMAL_FIELD_2 = "decimal_field_2";
+//    private static final String FIELD_ADD_1 = "add_field";
+//    private static final String FIELD_ADD_2 = "add_field_2";
+//    private static final String FIELD_ADD_3 = "add_field_3";
+//    private static final String FIELD_ADD_4 = "add_field_4";
+//    private static final String FIELD_ADD_5 = "add_field_5";
 
     private static final String BIG_FIELD_VALUE = """
         this is
@@ -42,11 +42,11 @@ public class DBSeederTest_Postgres extends PostgreSQLTest {
             file.
         """.stripIndent();
 
-    private static final String TYPE_INTEGER = "Integer";
+//    private static final String TYPE_INTEGER = "Integer";
 
     @Test
     @Order(10)
-    public void testRead() throws Exception {
+    public void testRead() {
         DBSSettings settings = new DBSSettings.Builder()
                 .connection(conn)
                 .dbSchema(DB_SCHEMA)

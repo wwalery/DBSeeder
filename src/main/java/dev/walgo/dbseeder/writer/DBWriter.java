@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Date;
@@ -28,6 +29,7 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.function.BiConsumer;
@@ -49,7 +51,7 @@ public class DBWriter implements IWriter {
     private static final ResultSetHandler<Map<String, Object>> insertHandler = new MapHandler();
 
     private final List<SeedInfo> infos;
-//    private final String schema;
+    // private final String schema;
     private final DBSSettings settings;
     private final DBInfo dbInfo;
     private Database database;
@@ -77,13 +79,13 @@ public class DBWriter implements IWriter {
         if (this.database == null) {
             this.database = new UnknownDatabase();
         }
-        this.database.setConnecton(settings.connection());
+        this.database.setConnection(settings.connection());
     }
 
     private void checkSeed(SeedInfo info) {
         try {
             Map<String, TableInfo> tableMap = dbInfo.getTablesAsMap();
-            TableInfo table = tableMap.get(info.getTableName().toLowerCase());
+            TableInfo table = tableMap.get(info.getTableName().toLowerCase(Locale.ROOT));
             if (table == null) {
                 throw new RuntimeException("Table [%s] doesn't exist".formatted(info.getTableName()));
             }
@@ -93,7 +95,7 @@ public class DBWriter implements IWriter {
             Map<String, ColumnInfo> fields = table.getFields();
             info.getFields().forEach((dataField, idx) -> {
                 try {
-                    String fieldName = dataField.toLowerCase();
+                    String fieldName = dataField.toLowerCase(Locale.ROOT);
                     ColumnInfo field = fields.get(fieldName);
                     if (field == null) {
                         throw new RuntimeException(
@@ -102,13 +104,13 @@ public class DBWriter implements IWriter {
                     }
                     if (info.getReferences().containsKey(fieldName)) {
                         ReferenceInfo ref = info.getReferences().get(fieldName);
-                        TableInfo refTable = tableMap.get(ref.getTableName().toLowerCase());
+                        TableInfo refTable = tableMap.get(ref.getTableName().toLowerCase(Locale.ROOT));
                         if (refTable == null) {
                             throw new RuntimeException(
                                     "Reference table [%s] doesn't exist".formatted(ref.getTableName()));
                         }
                         for (String refColumn : ref.getTableColumn()) {
-                            field = refTable.getFields().get(refColumn.toLowerCase());
+                            field = refTable.getFields().get(refColumn.toLowerCase(Locale.ROOT));
                             if (field == null) {
                                 throw new RuntimeException(
                                         "Field [%s] doesn't exists in reference table [%s]".formatted(
@@ -133,7 +135,7 @@ public class DBWriter implements IWriter {
             });
             int i = 1;
             for (String dataField : info.getKeys().keySet()) {
-                String fieldName = dataField.toLowerCase();
+                String fieldName = dataField.toLowerCase(Locale.ROOT);
                 ColumnInfo field = fields.get(fieldName);
                 if (field == null) {
                     throw new RuntimeException(
@@ -242,7 +244,9 @@ public class DBWriter implements IWriter {
                             } else {
                                 onEvent(settings.onUpdate(), info, data);
                                 RequestInfo updateData = generator.update(info, data);
-                                updated += update(info, updateData);
+                                if (updateData != null) {
+                                    updated += update(info, updateData);
+                                }
                             }
                             break;
                         default:
@@ -302,19 +306,19 @@ public class DBWriter implements IWriter {
         List<Object> data = new ArrayList<>();
         try {
             Map<String, TableInfo> tableMap = dbInfo.getTablesAsMap();
-            TableInfo table = tableMap.get(info.getTableName().toLowerCase());
+            TableInfo table = tableMap.get(info.getTableName().toLowerCase(Locale.ROOT));
             Map<String, ColumnInfo> fields = table.getFields();
             for (int i = 0; i < requestData.fields().size(); i++) {
                 RequestInfo.Field dataField = requestData.fields().get(i);
-                String fieldName = dataField.name.toLowerCase();
+                String fieldName = dataField.name().toLowerCase(Locale.ROOT);
                 ColumnInfo field = fields.get(fieldName);
                 String stringItem = requestData.data().get(i);
                 Object dataItem;
                 if (info.getReferences().containsKey(fieldName)) {
                     ReferenceInfo ref = info.getReferences().get(fieldName);
-                    TableInfo refTable = tableMap.get(ref.getTableName().toLowerCase());
+                    TableInfo refTable = tableMap.get(ref.getTableName().toLowerCase(Locale.ROOT));
                     if (ref.getTableColumn().size() == 1) {
-                        field = refTable.getFields().get(ref.getTableColumn().get(0).toLowerCase());
+                        field = refTable.getFields().get(ref.getTableColumn().get(0).toLowerCase(Locale.ROOT));
                         dataItem = string2object(stringItem, field, dataField);
                     } else {
                         dataItem = stringItem;
@@ -351,7 +355,7 @@ public class DBWriter implements IWriter {
                     ? settings.classLoader()
                     : getClass().getClassLoader();
             try (InputStream stream = classLoader.getResourceAsStream(srcDir + fileName)) {
-                return new String(stream.readAllBytes());
+                return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
             } catch (Exception ex) {
                 LOG.error("Error on reading resource: [{}]", srcDir + fileName);
                 throw new RuntimeException(ex);
@@ -367,22 +371,24 @@ public class DBWriter implements IWriter {
             dataItem = checkExternal(stringItem);
         } else {
             dataItem = switch (fieldType) {
-                case Types.SMALLINT -> Integer.valueOf(stringItem);
+                case Types.SMALLINT,
+                        Types.INTEGER ->
+                    Integer.valueOf(stringItem);
                 case Types.BIGINT -> Long.valueOf(stringItem);
                 case Types.BOOLEAN, Types.BIT -> Boolean.valueOf(stringItem);
                 case Types.DATE -> Date.valueOf(stringItem);
                 case Types.DECIMAL, Types.DOUBLE, Types.FLOAT, Types.NUMERIC, Types.REAL, Types.TINYINT ->
                     new BigDecimal(stringItem);
-                case Types.INTEGER -> Integer.valueOf(stringItem);
                 case Types.TIME -> Time.valueOf(stringItem);
                 case Types.TIMESTAMP -> stringItem.contains("T")
                         ? Timestamp.from(Instant.parse(stringItem))
                         : Timestamp.valueOf(stringItem);
-                case Types.TIMESTAMP_WITH_TIMEZONE -> ZonedDateTime.parse(stringItem);
-                case Types.TIME_WITH_TIMEZONE -> ZonedDateTime.parse(stringItem);
+                case Types.TIMESTAMP_WITH_TIMEZONE,
+                        Types.TIME_WITH_TIMEZONE ->
+                    ZonedDateTime.parse(stringItem);
                 case Types.BINARY, Types.VARBINARY -> new BigInteger(stringItem, 2).toByteArray();
                 case Types.OTHER -> database.valueFromString(fieldTypeName, stringItem);
-                case Types.ARRAY -> throw new RuntimeException("Unreacheable case");
+                case Types.ARRAY -> throw new RuntimeException("Unreachable case");
                 default -> checkExternal(stringItem);
             };
         }
@@ -430,7 +436,7 @@ public class DBWriter implements IWriter {
         } catch (Throwable ex) {
             throw new RuntimeException(
                     "Error on field %s [%s], value [%s] conversion: %s"
-                            .formatted(dataField.pos + 1, dataField.name, stringItem, ex.getMessage()),
+                            .formatted(dataField.pos() + 1, dataField.name(), stringItem, ex.getMessage()),
                     ex);
         }
     }

@@ -6,7 +6,7 @@ Uses simple CSV with the predefined structure to seed data into DB.
 
 Short QA:
 
-> Why don't seed data via SQL and Flyway/Liquidbase/etc?
+> Why don't seed data via SQL and Flyway/Liquibase/etc?
 
 Data changing via SQL is enough for you for the project to start, but after a while, it's not very convenient to analyze a lot of SQLs to understand the last data state
   
@@ -51,7 +51,7 @@ INSERT INTO test_table (key, value) VALUES (?,'test value 2')
 ### Seed settings
 
   * **table** - table name (example: table: my_table)                                                                                                                                                                               
-  * **keys** - key columns, delimited with **,** (example: keys: col1, col2). Usually, it's not the primary key, especially when the key it's autoincremented column, but a column with value, which uniquely identifies a row in CSV                
+  * **keys** - key columns, delimited with **,** (example: keys: col1, col2). Usually, it's not the primary key, especially when the key it's autoincrement column, but a column with value, which uniquely identifies a row in CSV                
   * **condition** - additional condition for table checking/referencing (example: condition: is_deleted = 0)                                                                                                                        
   * **action** - possible actions with CSV data (example: action: modify)                                                                                                                                                           
       * **ignore** - ignore this table, do nothing                                                                                                                                                                                  

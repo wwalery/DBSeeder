@@ -10,11 +10,15 @@ import java.util.Map;
 import java.util.TreeMap;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SQLGenerator {
 
     public static final String DIRECT_VALUE_SIGN = "!!";
     public static final String DATA_PLACEHOLDER = "?";
+
+    private static final Logger LOG = LoggerFactory.getLogger(SQLGenerator.class);
 
     private final Map<String, SeedInfo> sources;
     private final DBSSettings settings;
@@ -40,7 +44,7 @@ public class SQLGenerator {
             fieldNames.append(field);
             ReferenceInfo ref = info.getReferences().get(field);
             if (ref != null) {
-                insertVars.append("(").append(reference(ref, field, value)).append(")");
+                insertVars.append("(").append(reference(ref, value)).append(")");
             } else {
                 insertVars.append(value);
             }
@@ -67,7 +71,7 @@ public class SQLGenerator {
         info.getFields().forEach((field, idx) -> {
             ReferenceInfo ref = info.getReferences().get(field);
             String placeholder = value2replacement(data.values().get(idx));
-            String itemValue = ref == null ? placeholder : "(" + reference(ref, field, placeholder) + ")";
+            String itemValue = ref == null ? placeholder : "(" + reference(ref, placeholder) + ")";
             if (info.getKeys().containsKey(field)) {
                 if (!whereString.isEmpty()) {
                     whereString.append(" AND ");
@@ -88,6 +92,10 @@ public class SQLGenerator {
                 }
             }
         });
+        if (updateStr.isEmpty()) {
+            LOG.warn("No fields to update for file [{}], row: [{}]", info.getResourceName(), data.sourceNumber());
+            return null;
+        }
         String result = "UPDATE %s SET %s WHERE %s".formatted(info.getTableName(),
                 updateStr.toString(), whereString.toString());
         if ((info.getExtraCondition() != null) && !info.getExtraCondition().isEmpty()) {
@@ -99,7 +107,7 @@ public class SQLGenerator {
         return builder.build();
     }
 
-    public String reference(ReferenceInfo reference, String field, String value) {
+    public String reference(ReferenceInfo reference, String value) {
         String column = StringUtils.join(reference.getTableColumn(),
                 " || '" + settings.csvMultiRefDelimiter() + "' || ");
         String result = "SELECT %s FROM %s WHERE %s = %s".formatted(reference.getTableKeyColumn(),
@@ -123,7 +131,7 @@ public class SQLGenerator {
             boolean usePlaceholder = isPlaceholder(checkValue);
             if (info.getReferences().containsKey(key.getKey())) {
                 ReferenceInfo ref = info.getReferences().get(key.getKey());
-                String refSql = reference(ref, ref.getFieldName(), checkValue);
+                String refSql = reference(ref, checkValue);
                 checkValue = '(' + refSql + ')';
             }
             where += key.getKey() + " = " + checkValue;

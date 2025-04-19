@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.DriverManager;
@@ -34,20 +35,20 @@ public class DBSeederTest_HSQL {
     private static final String DB_USER = "sa";
     private static final String DB_URL = "jdbc:hsqldb:mem:testdb";
     private static final String DB_SQL = "src/test/resources/db/create_db_hsql.sql";
-    private static final String TABLE_2 = "test_table_2";
-    private static final String TABLE_1 = "test_table_1";
-    private static final String FIELD_OBJECT = "test_object";
-    private static final String FIELD_ARRAY = "test_array";
-    private static final String FIELD_ENUM = "enum_field";
-    private static final String FIELD_ENUM_2 = "enum_field_2";
-    private static final String FIELD_INT = "read_only";
-    private static final String DECIMAL_FIELD_1 = "decimal_field_1";
-    private static final String DECIMAL_FIELD_2 = "decimal_field_2";
-    private static final String FIELD_ADD_1 = "add_field";
-    private static final String FIELD_ADD_2 = "add_field_2";
-    private static final String FIELD_ADD_3 = "add_field_3";
-    private static final String FIELD_ADD_4 = "add_field_4";
-    private static final String FIELD_ADD_5 = "add_field_5";
+//    private static final String TABLE_2 = "test_table_2";
+//    private static final String TABLE_1 = "test_table_1";
+//    private static final String FIELD_OBJECT = "test_object";
+//    private static final String FIELD_ARRAY = "test_array";
+//    private static final String FIELD_ENUM = "enum_field";
+//    private static final String FIELD_ENUM_2 = "enum_field_2";
+//    private static final String FIELD_INT = "read_only";
+//    private static final String DECIMAL_FIELD_1 = "decimal_field_1";
+//    private static final String DECIMAL_FIELD_2 = "decimal_field_2";
+//    private static final String FIELD_ADD_1 = "add_field";
+//    private static final String FIELD_ADD_2 = "add_field_2";
+//    private static final String FIELD_ADD_3 = "add_field_3";
+//    private static final String FIELD_ADD_4 = "add_field_4";
+//    private static final String FIELD_ADD_5 = "add_field_5";
 
     private static final String BIG_FIELD_VALUE = """
         this is
@@ -55,7 +56,7 @@ public class DBSeederTest_HSQL {
             file.
         """.stripIndent();
 
-    private static final String TYPE_INTEGER = "Integer";
+//    private static final String TYPE_INTEGER = "Integer";
 
     private static Connection conn;
 
@@ -64,7 +65,7 @@ public class DBSeederTest_HSQL {
         conn = DriverManager.getConnection(DB_URL, DB_USER, "");
         try (InputStream inputStream = new FileInputStream(DB_SQL)) {
             SqlFile sqlFile = new SqlFile(
-                    new InputStreamReader(inputStream),
+                    new InputStreamReader(inputStream, StandardCharsets.UTF_8),
                     "init",
                     System.out,
                     "UTF-8",
@@ -76,7 +77,7 @@ public class DBSeederTest_HSQL {
     }
 
     @AfterAll
-    public static void after() throws SQLException, IOException {
+    public static void after() throws SQLException {
         conn.close();
         // Files.delete(Paths.get("testdb.log"));
         // Files.delete(Paths.get("testdb.properties"));
@@ -86,7 +87,7 @@ public class DBSeederTest_HSQL {
 
     @Test
     @Order(10)
-    public void testRead() throws Exception {
+    public void testRead() {
         DBSSettings settings = new DBSSettings.Builder()
                 .connection(conn)
                 .dbSchema("PUBLIC")

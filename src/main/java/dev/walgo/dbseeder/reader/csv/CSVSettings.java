@@ -2,7 +2,7 @@ package dev.walgo.dbseeder.reader.csv;
 
 class CSVSettings {
 
-    static char INTERNAL_DELIMITER = ',';
+    static final char INTERNAL_DELIMITER = ',';
 
     static final String S_NAME_ID = "id";
     static final String S_NAME_KEY = "keys";

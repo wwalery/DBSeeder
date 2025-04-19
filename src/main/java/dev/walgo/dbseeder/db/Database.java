@@ -10,7 +10,7 @@ public abstract class Database {
 
     protected Connection conn;
 
-    public void setConnecton(Connection conn) {
+    public void setConnection(Connection conn) {
         if (conn instanceof ConnectionWrapper agroal) {
             this.conn = agroal.getHandler().rawConnection();
         } else {
@@ -36,8 +36,8 @@ public abstract class Database {
     /**
      * Get JDBC type from custom field name.
      * 
-     * @param typeName
-     * @return
+     * @param typeName name of type
+     * @return JDBC type number
      */
     public abstract int getSqlType(String typeName);
 

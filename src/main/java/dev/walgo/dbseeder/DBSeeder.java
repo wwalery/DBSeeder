@@ -134,7 +134,7 @@ public class DBSeeder {
 
     /**
      * Write data into DB.
-     *
+     * <p>
      * Use default implementation of {@link DBWriter}
      */
     public void write() {

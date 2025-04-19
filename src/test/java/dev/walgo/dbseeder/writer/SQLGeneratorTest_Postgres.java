@@ -8,7 +8,6 @@ import dev.walgo.dbseeder.SourceType;
 import dev.walgo.dbseeder.data.DataRow;
 import dev.walgo.dbseeder.data.ReferenceInfo;
 import dev.walgo.dbseeder.data.SeedInfo;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -21,7 +20,7 @@ public class SQLGeneratorTest_Postgres extends PostgreSQLTest {
     private static DBSSettings settings;
 
     @BeforeAll
-    public static void init() throws SQLException {
+    public static void init() {
         settings = new DBSSettings.Builder()
                 .connection(conn)
                 .dbSchema("PUBLIC")
@@ -96,7 +95,7 @@ public class SQLGeneratorTest_Postgres extends PostgreSQLTest {
         assertThat(result).isNotNull();
         assertThat(result.sql()).isEqualTo("INSERT INTO test (test_1, test_2, test_3) VALUES (?, ?, ?) RETURNING id");
         assertThat(result.data()).containsExactlyElementsOf(data.values());
-        List<String> testFields = result.fields().stream().map(it -> it.name).toList();
+        List<String> testFields = result.fields().stream().map(RequestInfo.Field::name).toList();
         assertThat(testFields).containsExactlyElementsOf(info.getFields().keySet());
     }
 
@@ -111,7 +110,7 @@ public class SQLGeneratorTest_Postgres extends PostgreSQLTest {
         assertThat(result.data()).containsExactlyElementsOf(List.of("1", "3"));
         Map<String, Integer> fields = new LinkedHashMap<>(info.getFields());
         fields.remove("test_2");
-        List<String> testFields = result.fields().stream().map(it -> it.name).toList();
+        List<String> testFields = result.fields().stream().map(it -> it.name()).toList();
         assertThat(testFields).containsExactlyElementsOf(fields.keySet());
     }
 
@@ -126,7 +125,7 @@ public class SQLGeneratorTest_Postgres extends PostgreSQLTest {
         assertThat(result.sql()).isEqualTo(
                 "INSERT INTO test_2 (key_id, test_1_1, test_2_2, test_3_3) VALUES ((SELECT key_id FROM test WHERE test_2 = ?), ?, ?, ?)");
         assertThat(result.data()).containsExactlyElementsOf(data.values());
-        List<String> testFields = result.fields().stream().map(it -> it.name).toList();
+        List<String> testFields = result.fields().stream().map(it -> it.name()).toList();
         assertThat(testFields).containsExactlyElementsOf(info2.getFields().keySet());
     }
 
@@ -143,7 +142,7 @@ public class SQLGeneratorTest_Postgres extends PostgreSQLTest {
         assertThat(result).isNotNull();
         assertThat(result.sql()).isEqualTo("UPDATE test SET test_1 = ?, test_3 = ? WHERE test_2 = ?");
         assertThat(result.data()).containsExactlyElementsOf(List.of("1", "3", "2"));
-        List<String> testFields = result.fields().stream().map(it -> it.name).toList();
+        List<String> testFields = result.fields().stream().map(it -> it.name()).toList();
         assertThat(testFields).containsExactlyElementsOf(List.of("test_1", "test_3", "test_2"));
     }
 
@@ -158,7 +157,7 @@ public class SQLGeneratorTest_Postgres extends PostgreSQLTest {
         assertThat(result.data()).containsExactlyElementsOf(List.of("1", "3"));
         ArrayList<String> fields = new ArrayList<>(info.getFields().keySet());
         fields.remove("test_2");
-        List<String> testFields = result.fields().stream().map(it -> it.name).toList();
+        List<String> testFields = result.fields().stream().map(it -> it.name()).toList();
         assertThat(testFields).containsExactlyElementsOf(fields);
     }
 
@@ -173,7 +172,7 @@ public class SQLGeneratorTest_Postgres extends PostgreSQLTest {
         assertThat(result.sql()).isEqualTo(
                 "UPDATE test_2 SET key_id = (SELECT key_id FROM test WHERE test_2 = ?), test_1_1 = ?, test_3_3 = ? WHERE test_2_2 = ?");
         assertThat(result.data()).containsExactlyElementsOf(List.of("0", "1", "3", "2"));
-        List<String> testFields = result.fields().stream().map(it -> it.name).toList();
+        List<String> testFields = result.fields().stream().map(it -> it.name()).toList();
         assertThat(testFields).containsExactlyElementsOf(List.of("key_id", "test_1_1", "test_3_3", "test_2_2"));
     }
 
@@ -183,7 +182,7 @@ public class SQLGeneratorTest_Postgres extends PostgreSQLTest {
         SeedInfo info2 = makeInfo2();
         SQLGenerator instance = new SQLGenerator(List.of(info1, info2), settings);
         String fieldName = "key_id";
-        String result = instance.reference(info2.getReferences().get(fieldName), fieldName, "?");
+        String result = instance.reference(info2.getReferences().get(fieldName), "?");
         assertThat(result).isNotNull();
         assertThat(result).isEqualTo("SELECT key_id FROM test WHERE test_2 = ?");
     }
@@ -194,7 +193,7 @@ public class SQLGeneratorTest_Postgres extends PostgreSQLTest {
         SeedInfo info2 = makeInfo2_MultiRef();
         SQLGenerator instance = new SQLGenerator(List.of(info1, info2), settings);
         String fieldName = "key_id";
-        String result = instance.reference(info2.getReferences().get(fieldName), fieldName, "?");
+        String result = instance.reference(info2.getReferences().get(fieldName), "?");
         assertThat(result).isNotNull();
         assertThat(result).isEqualTo("SELECT key_id FROM test WHERE test_2 || '##' || test_2_sub = ?");
     }
@@ -208,7 +207,7 @@ public class SQLGeneratorTest_Postgres extends PostgreSQLTest {
         assertThat(result).isNotNull();
         assertThat(result.sql()).isEqualTo("SELECT COUNT(*) FROM test WHERE test_2 = ?");
         assertThat(result.data()).containsExactlyElementsOf(List.of("2"));
-        List<String> testFields = result.fields().stream().map(it -> it.name).toList();
+        List<String> testFields = result.fields().stream().map(it -> it.name()).toList();
         assertThat(testFields).containsExactlyElementsOf(List.of("test_2"));
     }
 

@@ -5,7 +5,7 @@ public enum SourceType {
 
     private final String extension;
 
-    private SourceType(String extension) {
+    SourceType(String extension) {
         this.extension = extension;
     }
 

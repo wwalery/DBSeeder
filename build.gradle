@@ -6,6 +6,7 @@ plugins {
 //  id 'checkstyle'
   id 'maven-publish'
   id 'signing'
+  id 'com.adarshr.test-logger' version '4.0.0'
 }
 
 sourceCompatibility = JavaVersion.VERSION_17
@@ -27,15 +28,15 @@ spotless {
 
 dependencies {
 
-  annotationProcessor 'org.immutables:value:2.9.3'
-  compileOnly 'org.immutables:value:2.9.3'
+  annotationProcessor 'org.immutables:value:2.10.1'
+  compileOnly 'org.immutables:value:2.10.1'
   compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
   
   api "org.slf4j:slf4j-api:${slf4jVersion}"
   api "org.apache.commons:commons-lang3:${commonsLangVersion}"
   api "org.apache.commons:commons-collections4:${commonsCollectionsVersion}"
   api "commons-dbutils:commons-dbutils:${dbUtilsVersion}"
-  implementation "dev.walgo:walib:0.7.0"
+  implementation "dev.walgo:walib:0.8.0"
 //  implementation files("/home/walery/dev/dev.walgo/walib/build/libs/walib-0.7.0.jar")
 
   errorprone "com.google.errorprone:error_prone_core:${errorProneVersion}"
@@ -47,7 +48,10 @@ dependencies {
 //  compileOnly "org.apache.tomcat:tomcat-jdbc:${tomcatJdbcVersion}"
 
 
-  testImplementation 'org.junit.jupiter:junit-jupiter:5.9.1'
+  testImplementation "org.junit.jupiter:junit-jupiter:${junitVersion}"
+  testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+  
+  
   testImplementation "org.assertj:assertj-core:${assertjVersion}"
 // https://mvnrepository.com/artifact/org.hsqldb/hsqldb
   testImplementation "org.hsqldb:hsqldb:${hsqldbVersion}"
@@ -103,31 +107,54 @@ def defaultManifest(def defaultTitle = null, def defaultVersion = null) {
   ]
 }
 
+  testlogger {
+    theme 'standard'
+    showExceptions true
+    showStackTraces true
+    showFullStackTraces false
+    showCauses true
+    slowThreshold 2000
+    showSummary true
+    showSimpleNames false
+    showPassed true
+    showSkipped true
+    showFailed true
+    showOnlySlow false
+    showStandardStreams false
+    showPassedStandardStreams true
+    showSkippedStandardStreams true
+    showFailedStandardStreams true
+    logLevel 'lifecycle'
+  }
+
+
 test {
-  useJUnitPlatform()
+  useJUnitPlatform {
+    version = junitVersion
+  }
   testLogging.showStandardStreams = true
   minHeapSize = "512m"
   maxHeapSize = "1024m"
 
 // listen to events in the test execution lifecycle
-  beforeTest { descriptor ->
-    logger.lifecycle("Running test: " + descriptor)
-  }
+//  beforeTest { descriptor ->
+//    logger.lifecycle("Running test: " + descriptor)
+//  }
 
 // listen to standard out and standard error of the test JVM(s)
 //    onOutput { descriptor, event ->
 //      logger.lifecycle(descriptor + ": " + event.message)
 //    }
 
-  testLogging {
-    events "passed", "skipped", "failed"
-    exceptionFormat = 'full'
-  }
-  afterSuite { desc, result ->
-    if (!desc.parent) { // will match the outermost suite
-      println "Results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} successes, ${result.failedTestCount} failures, ${result.skippedTestCount} skipped)"
-    }
-  }
+//  testLogging {
+//    events "passed", "skipped", "failed"
+//    exceptionFormat = 'full'
+//  }
+//  afterSuite { desc, result ->
+//    if (!desc.parent) { // will match the outermost suite
+//      println "Results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} successes, ${result.failedTestCount} failures, ${result.skippedTestCount} skipped)"
+//    }
+//  }
 }
 
 
