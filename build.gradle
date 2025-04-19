@@ -129,9 +129,7 @@ def defaultManifest(def defaultTitle = null, def defaultVersion = null) {
 
 
 test {
-  useJUnitPlatform {
-    version = junitVersion
-  }
+  useJUnitPlatform()
   testLogging.showStandardStreams = true
   minHeapSize = "512m"
   maxHeapSize = "1024m"
