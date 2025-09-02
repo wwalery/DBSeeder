@@ -121,11 +121,11 @@ public class DBWriter implements IWriter {
                                 throw new RuntimeException(
                                         "Referenced table [%s] hasn't key columns".formatted(ref.getTableName()));
                             }
-                            if (refTable.getKeys().size() > 1) {
-                                throw new RuntimeException(
-                                        "Referenced table [%s] has more than one key columns"
-                                                .formatted(ref.getTableName()));
-                            }
+//                            if (refTable.getKeys().size() > 1) {
+//                                throw new RuntimeException(
+//                                        "Referenced table [%s] has more than one key columns"
+//                                                .formatted(ref.getTableName()));
+//                            }
                         }
                         ref.setTableKeyColumn(refTable.getKeys().get(0));
                     }

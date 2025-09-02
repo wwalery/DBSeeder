@@ -18,7 +18,8 @@ CREATE TABLE test_table_1 (
   real_field REAL,
   binary_field BYTEA,
   varbinary_field BYTEA,
-  other_field TEXT
+  other_field TEXT,
+  uuid_field UUID
 );
 
 CREATE TABLE test_table_2 (
