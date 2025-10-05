@@ -16,6 +16,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -59,7 +60,8 @@ public class DBSeeder {
     }
 
     public SeedInfo read(String fileName, InputStream stream) {
-        IReader reader = ReaderFactory.getReader(settings);
+        IReader reader = ReaderFactory.getReader(settings, fileName);
+        LOG.debug("Use reader [{}] for file [{}]", reader.getClass().getSimpleName(), fileName);
         try {
             SeedInfo info = reader.read(fileName, stream);
             info.setResourceName(fileName);
@@ -78,23 +80,27 @@ public class DBSeeder {
         File dir = new File(srcDir);
         boolean isExternalResource = dir.exists();
         List<String> files;
+        List<String> exts = settings.sourceType().getExtensions();
         if (isExternalResource) {
             files = Arrays.stream(dir.list())
-                    .filter(it -> it.endsWith(settings.sourceExt()))
+                    .filter(it -> exts.contains(FilenameUtils.getExtension(it)))
                     .sorted()
                     .toList();
         } else if (settings.classLoader() != null) {
             files = ResourceLoader.listFromClassLoader(settings.classLoader(), settings.sourceDir())
                     .stream()
-                    .filter(it -> it.endsWith(settings.sourceExt()))
+                    .filter(it -> exts.contains(FilenameUtils.getExtension(it)))
                     .sorted()
                     .toList();
         } else {
             String fileRegex = "^" + StringUtils.replace(srcDir, "/", "\\/")
-                    + ".+?\\"
-                    + settings.sourceExt();
+                    + ".+?"
+//                    + ".+?\\"
+//                    + settings.sourceExt()
+            ;
             files = ResourceUtils.findResourceFiles(fileRegex)
                     .stream()
+                    .filter(it -> exts.contains(FilenameUtils.getExtension(it)))
                     .sorted()
                     .toList();
         }
@@ -148,9 +154,10 @@ public class DBSeeder {
      */
     public void write(Class<? extends DBWriter> writerClass) {
         for (SeedInfo info : infos) {
-            LOG.info("Write table [{}] from resource [{}]", info.getTableName(), info.getResourceName());
+            LOG.info("Write table [{}] from resource [{}] via [{}]", info.getTableName(), info.getResourceName(),
+                    writerClass.getSimpleName());
             Pair<Integer, Integer> result = write(info, writerClass);
-            LOG.info("{}: {} records inserted, {} records updated",
+            LOG.info("{} -> inserted: {}, updated: {}",
                     info.getTableName(), result.getLeft(), result.getRight());
         }
     }

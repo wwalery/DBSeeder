@@ -3,6 +3,7 @@ package dev.walgo.dbseeder;
 import dev.walgo.dbseeder.data.DataRow;
 import dev.walgo.dbseeder.data.SeedInfo;
 import java.sql.Connection;
+import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -39,16 +40,17 @@ public abstract class DBSSettings {
      *
      * @return extension
      */
+    @Nullable
     @Value.Default
-    public String sourceExt() {
-        return sourceType().getExtension();
+    public List<String> sourceExt() {
+        return sourceType().getExtensions();
     }
 
     public abstract String dbSchema();
 
     @Value.Default
     public SourceType sourceType() {
-        return SourceType.CSV;
+        return SourceType.ANY;
     }
 
     @Value.Default

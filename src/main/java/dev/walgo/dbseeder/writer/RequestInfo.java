@@ -13,7 +13,7 @@ public abstract class RequestInfo {
     public abstract List<Field> fields();
 
     @AllowNulls
-    public abstract List<String> data();
+    public abstract List<Object> data();
 
     public static class Builder extends RequestInfoBuilder {
     }

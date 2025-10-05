@@ -36,8 +36,9 @@ dependencies {
   api "org.slf4j:slf4j-api:${slf4jVersion}"
   api "org.apache.commons:commons-lang3:${commonsLangVersion}"
   api "org.apache.commons:commons-collections4:${commonsCollectionsVersion}"
+  api "commons-io:commons-io:${commonsIOVersion}"
   api "commons-dbutils:commons-dbutils:${dbUtilsVersion}"
-  implementation "dev.walgo:walib:0.8.0"
+  implementation "dev.walgo:walib:0.10.0"
 //  implementation files("/home/walery/dev/dev.walgo/walib/build/libs/walib-0.7.0.jar")
 
   errorprone "com.google.errorprone:error_prone_core:${errorProneVersion}"
@@ -48,6 +49,11 @@ dependencies {
   
 //  compileOnly "org.apache.tomcat:tomcat-jdbc:${tomcatJdbcVersion}"
 
+
+  api "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
+  api "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+  api "com.fasterxml.jackson.core:jackson-annotations:2.20"
+  api "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}"
 
   testImplementation "org.junit.jupiter:junit-jupiter:${junitVersion}"
   testRuntimeOnly("org.junit.platform:junit-platform-launcher")

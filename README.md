@@ -2,7 +2,7 @@
 
 Seeds initial/dictionary/static data into the database.
 
-Uses simple CSV with the predefined structure to seed data into DB.
+Uses simple CSV/JSON/XML with the predefined structure to seed data into DB.
 
 Short QA:
 
@@ -13,7 +13,7 @@ Data changing via SQL is enough for you for the project to start, but after a wh
 
 > It's much simpler for me to do the same via SQL
 
-Maybe, but usually slightly simpler to create/update CSV than write SQL for the same
+Maybe, but usually slightly simpler to create/update CSV/JSON/XML than write SQL for the same
 
 
 > Why INSERT/UPDATE only, but not DELETE?
@@ -71,7 +71,8 @@ INSERT INTO test_table (key, value) VALUES (?,'test value 2')
 
   You can use data of any type from text value to dates and times (in ISO format). Data types should be recognized automatically.                                                                                                 
 
-  For arrays, you should use **|** delimiter for array items.
+#### CSV
+  For arrays, you should use **|** delimiter for array items, but only for array columns. Column name with **[]** treat as array.
   
   For extract value from external file (e.g. for big columns) you should use **@@** sign. These external files should be inside the source directory.
   

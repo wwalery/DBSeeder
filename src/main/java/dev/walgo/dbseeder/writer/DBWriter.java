@@ -38,7 +38,6 @@ import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.dbutils.handlers.MapHandler;
 import org.apache.commons.dbutils.handlers.ScalarHandler;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.function.TriConsumer;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -187,7 +186,7 @@ public class DBWriter implements IWriter {
 
     @Override
     public Pair<Integer, Integer> write(SeedInfo info) {
-        LOG.info("Process table: [{}], resource: [{}]", info.getTableName(), info.getResourceName());
+//        LOG.info("Process table: [{}], resource: [{}]", info.getTableName(), info.getResourceName());
         onEvent(settings.onStartData(), info);
         checkSeed(info);
         try {
@@ -312,19 +311,19 @@ public class DBWriter implements IWriter {
                 RequestInfo.Field dataField = requestData.fields().get(i);
                 String fieldName = dataField.name().toLowerCase(Locale.ROOT);
                 ColumnInfo field = fields.get(fieldName);
-                String stringItem = requestData.data().get(i);
+                Object objectItem = requestData.data().get(i);
                 Object dataItem;
                 if (info.getReferences().containsKey(fieldName)) {
                     ReferenceInfo ref = info.getReferences().get(fieldName);
                     TableInfo refTable = tableMap.get(ref.getTableName().toLowerCase(Locale.ROOT));
                     if (ref.getTableColumn().size() == 1) {
                         field = refTable.getFields().get(ref.getTableColumn().get(0).toLowerCase(Locale.ROOT));
-                        dataItem = string2object(stringItem, field, dataField);
+                        dataItem = raw2object(objectItem, field, dataField);
                     } else {
-                        dataItem = stringItem;
+                        dataItem = objectItem;
                     }
                 } else {
-                    dataItem = string2object(stringItem, field, dataField);
+                    dataItem = raw2object(objectItem, field, dataField);
                 }
                 data.add(dataItem);
             }
@@ -363,34 +362,39 @@ public class DBWriter implements IWriter {
         }
     }
 
-    protected Object string2object(String stringItem, int fieldType, String fieldTypeName) {
+    protected Object raw2object(Object objectItem, int fieldType, String fieldTypeName) {
         Object dataItem;
-        if (stringItem == null) {
+        if (objectItem == null) {
             return null;
-        } else if (DBUtils.isStringField(fieldType)) {
-            dataItem = checkExternal(stringItem);
+        }
+        if (objectItem instanceof String stringItem) {
+            if (DBUtils.isStringField(fieldType)) {
+                dataItem = checkExternal(stringItem);
+            } else {
+                dataItem = switch (fieldType) {
+                    case Types.SMALLINT,
+                            Types.INTEGER ->
+                        Integer.valueOf(stringItem);
+                    case Types.BIGINT -> Long.valueOf(stringItem);
+                    case Types.BOOLEAN, Types.BIT -> Boolean.valueOf(stringItem);
+                    case Types.DATE -> Date.valueOf(stringItem);
+                    case Types.DECIMAL, Types.DOUBLE, Types.FLOAT, Types.NUMERIC, Types.REAL, Types.TINYINT ->
+                        new BigDecimal(stringItem);
+                    case Types.TIME -> Time.valueOf(stringItem);
+                    case Types.TIMESTAMP -> stringItem.contains("T")
+                            ? Timestamp.from(Instant.parse(stringItem))
+                            : Timestamp.valueOf(stringItem);
+                    case Types.TIMESTAMP_WITH_TIMEZONE,
+                            Types.TIME_WITH_TIMEZONE ->
+                        ZonedDateTime.parse(stringItem);
+                    case Types.BINARY, Types.VARBINARY -> new BigInteger(stringItem, 2).toByteArray();
+                    case Types.OTHER -> database.valueFromString(fieldTypeName, stringItem);
+                    case Types.ARRAY -> throw new RuntimeException("Unreachable case");
+                    default -> checkExternal(stringItem);
+                };
+            }
         } else {
-            dataItem = switch (fieldType) {
-                case Types.SMALLINT,
-                        Types.INTEGER ->
-                    Integer.valueOf(stringItem);
-                case Types.BIGINT -> Long.valueOf(stringItem);
-                case Types.BOOLEAN, Types.BIT -> Boolean.valueOf(stringItem);
-                case Types.DATE -> Date.valueOf(stringItem);
-                case Types.DECIMAL, Types.DOUBLE, Types.FLOAT, Types.NUMERIC, Types.REAL, Types.TINYINT ->
-                    new BigDecimal(stringItem);
-                case Types.TIME -> Time.valueOf(stringItem);
-                case Types.TIMESTAMP -> stringItem.contains("T")
-                        ? Timestamp.from(Instant.parse(stringItem))
-                        : Timestamp.valueOf(stringItem);
-                case Types.TIMESTAMP_WITH_TIMEZONE,
-                        Types.TIME_WITH_TIMEZONE ->
-                    ZonedDateTime.parse(stringItem);
-                case Types.BINARY, Types.VARBINARY -> new BigInteger(stringItem, 2).toByteArray();
-                case Types.OTHER -> database.valueFromString(fieldTypeName, stringItem);
-                case Types.ARRAY -> throw new RuntimeException("Unreachable case");
-                default -> checkExternal(stringItem);
-            };
+            dataItem = objectItem;
         }
         return dataItem;
     }
@@ -398,45 +402,44 @@ public class DBWriter implements IWriter {
     /**
      * Convert string value to object with type specified by column type.
      *
-     * @param stringItem text value
-     * @param field      column info
-     * @param dataField  field info
+     * @param rawItem   raw field value
+     * @param field     column info
+     * @param dataField field info
      * @return converted value
      */
-    protected Object string2object(String stringItem, ColumnInfo field, RequestInfo.Field dataField) {
+    protected Object raw2object(Object rawItem, ColumnInfo field, RequestInfo.Field dataField) {
         try {
-            LOG.trace("Convert {} into object", field);
+            LOG.trace("Convert {} into object [{}]", field.name(), rawItem);
             Object dataItem;
-            if (stringItem == null) {
+            if (rawItem == null) {
                 return null;
             }
-            if (Types.ARRAY == field.type()) {
-                String[] strElems = StringUtils.stripAll(StringUtils.split(stringItem, settings.csvArrayDelimiter()));
-                for (int i = 0; i < strElems.length; i++) {
-                    strElems[i] = checkExternal(strElems[i]);
+            if (rawItem instanceof List listItems) {
+                if (Types.ARRAY != field.type()) {
+                    throw new RuntimeException("Field [%s] definded as array in source file, but [%S] in DB"
+                            .formatted(field.name(), field.typeName()));
                 }
-                if (strElems.length == 0) {
-                    dataItem = strElems;
-                } else {
-                    int type = database.getSqlType(field.typeName());
-                    if (DBUtils.isStringField(type)) {
-                        dataItem = strElems;
-                    } else {
-                        Object[] elems = new Object[strElems.length];
-                        for (int i = 0; i < strElems.length; i++) {
-                            elems[i] = string2object(strElems[i], type, field.typeName());
-                        }
-                        dataItem = settings.connection().createArrayOf(field.typeName(), elems);
+                if (listItems.isEmpty()) {
+                    return listItems;
+                }
+                Object[] elems = new Object[listItems.size()];
+                int type = database.getSqlType(field.typeName());
+                for (int i = 0; i < listItems.size(); i++) {
+                    Object rawElem = listItems.get(i);
+                    if (rawElem instanceof String stringElem) {
+                        rawElem = checkExternal(stringElem);
                     }
+                    elems[i] = raw2object(rawElem, type, field.typeName());
                 }
+                dataItem = settings.connection().createArrayOf(field.typeName(), elems);
             } else {
-                dataItem = string2object(stringItem, field.type(), field.typeName());
+                dataItem = raw2object(rawItem, field.type(), field.typeName());
             }
             return dataItem;
         } catch (Throwable ex) {
             throw new RuntimeException(
                     "Error on field %s [%s], value [%s] conversion: %s"
-                            .formatted(dataField.pos() + 1, dataField.name(), stringItem, ex.getMessage()),
+                            .formatted(dataField.pos() + 1, dataField.name(), rawItem, ex.getMessage()),
                     ex);
         }
     }

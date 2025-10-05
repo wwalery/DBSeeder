@@ -15,7 +15,10 @@ public class SeedInfo {
     private String resourceName;
     private ActionType action;
     private String extraCondition;
-    private final Map<String, Integer> fields;
+
+    // Ignore omited fields
+    private boolean ignoreOmits;
+    private final Map<String, FieldInfo> fields;
     private final Map<String, Integer> keys;
     private final Map<String, ReferenceInfo> references;
     private final List<DataRow> data;
@@ -29,27 +32,27 @@ public class SeedInfo {
         this.references = new HashMap<>();
     }
 
-    public String getFieldValue(String fieldName, DataRow row) {
-        Integer idx = fields.get(fieldName);
-        if (idx == null) {
+    public Object getFieldValue(String fieldName, DataRow row) {
+        FieldInfo info = fields.get(fieldName);
+        if (info == null) {
             return null;
         }
-        return row.values().get(idx);
+        return row.values().get(info.index);
     }
 
-    public String setFieldValue(String fieldName, String value, DataRow row) {
-        Integer idx = fields.get(fieldName);
-        if (idx == null) {
+    public Object setFieldValue(String fieldName, Object value, DataRow row) {
+        FieldInfo info = fields.get(fieldName);
+        if (info == null) {
             return null;
         }
-        return row.values().set(idx, value);
+        return row.values().set(info.index, value);
     }
 
     public void setAction(ActionType action) {
         this.action = action;
     }
 
-    public Map<String, Integer> getFields() {
+    public Map<String, FieldInfo> getFields() {
         return fields;
     }
 
@@ -67,6 +70,18 @@ public class SeedInfo {
 
     public List<DataRow> getData() {
         return data;
+    }
+
+    public DataRow getDataRow(int idx) {
+        return data.get(idx);
+    }
+
+    public Object getDataValue(int idx, String fieldName) {
+        FieldInfo info = fields.get(fieldName);
+        if (info == null) {
+            return null;
+        }
+        return data.get(idx).values().get(info.index);
     }
 
     public String getTableName() {
@@ -101,9 +116,32 @@ public class SeedInfo {
         this.tableKeys = tableKeys;
     }
 
+    public boolean ignoreOmits() {
+        return ignoreOmits;
+    }
+
+    public void setIgnoreOmits(boolean ignoreOmits) {
+        this.ignoreOmits = ignoreOmits;
+    }
+
     @Override
     public String toString() {
         return ReflectionToStringBuilder.reflectionToString(this);
+    }
+
+    public static class FieldInfo {
+        public int index;
+        public boolean isArray; // for non-structured sources, like CSV
+
+        public FieldInfo(int index) {
+            this.index = index;
+        }
+
+        public FieldInfo(int index, boolean isArray) {
+            this.index = index;
+            this.isArray = isArray;
+        }
+
     }
 
 }

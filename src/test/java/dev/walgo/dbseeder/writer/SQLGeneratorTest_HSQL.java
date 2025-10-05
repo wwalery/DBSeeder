@@ -41,9 +41,9 @@ public class SQLGeneratorTest_HSQL {
         info.setTableName("test");
         info.getKeys().put("test_2", 1);
 
-        info.getFields().put("test_1", 0);
-        info.getFields().put("test_2", 1);
-        info.getFields().put("test_3", 2);
+        info.getFields().put("test_1", new SeedInfo.FieldInfo(0));
+        info.getFields().put("test_2", new SeedInfo.FieldInfo(1));
+        info.getFields().put("test_3", new SeedInfo.FieldInfo(2));
         return info;
     }
 
@@ -51,10 +51,10 @@ public class SQLGeneratorTest_HSQL {
         SeedInfo info = new SeedInfo();
         info.setTableName("test_2");
         info.getKeys().put("test_2_2", 1);
-        info.getFields().put("key_id", 0);
-        info.getFields().put("test_1_1", 1);
-        info.getFields().put("test_2_2", 2);
-        info.getFields().put("test_3_3", 3);
+        info.getFields().put("key_id", new SeedInfo.FieldInfo(0));
+        info.getFields().put("test_1_1", new SeedInfo.FieldInfo(1));
+        info.getFields().put("test_2_2", new SeedInfo.FieldInfo(2));
+        info.getFields().put("test_3_3", new SeedInfo.FieldInfo(3));
         ReferenceInfo ref = new ReferenceInfo();
         ref.setFieldIdx(0);
         ref.setFieldName("test_2");
@@ -69,10 +69,10 @@ public class SQLGeneratorTest_HSQL {
         SeedInfo info = new SeedInfo();
         info.setTableName("test_2");
         info.getKeys().put("test_2_2", 1);
-        info.getFields().put("key_id", 0);
-        info.getFields().put("test_1_1", 1);
-        info.getFields().put("test_2_2", 2);
-        info.getFields().put("test_3_3", 3);
+        info.getFields().put("key_id", new SeedInfo.FieldInfo(0));
+        info.getFields().put("test_1_1", new SeedInfo.FieldInfo(1));
+        info.getFields().put("test_2_2", new SeedInfo.FieldInfo(2));
+        info.getFields().put("test_3_3", new SeedInfo.FieldInfo(3));
         ReferenceInfo ref = new ReferenceInfo();
         ref.setFieldIdx(0);
         ref.setFieldName("test_2");
@@ -83,7 +83,7 @@ public class SQLGeneratorTest_HSQL {
         return info;
     }
 
-    private DataRow makeTestData(String... data) {
+    private DataRow makeTestData(Object... data) {
         return new DataRow(1)
                 .addValues(data);
     }
@@ -114,7 +114,7 @@ public class SQLGeneratorTest_HSQL {
         assertThat(result).isNotNull();
         assertThat(result.sql()).isEqualTo("INSERT INTO test (test_1, test_2, test_3) VALUES (?, -2, ?)");
         assertThat(result.data()).containsExactlyElementsOf(List.of("1", "3"));
-        Map<String, Integer> fields = new LinkedHashMap<>(info.getFields());
+        Map<String, SeedInfo.FieldInfo> fields = new LinkedHashMap<>(info.getFields());
         fields.remove("test_2");
         List<String> testFields = result.fields().stream().map(it -> it.name()).toList();
         assertThat(testFields).containsExactlyElementsOf(fields.keySet());

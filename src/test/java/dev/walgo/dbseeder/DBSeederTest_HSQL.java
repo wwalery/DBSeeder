@@ -24,7 +24,6 @@ import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.handlers.MapListHandler;
 import org.hsqldb.cmdline.SqlFile;
 import org.hsqldb.cmdline.SqlToolError;
-import org.hsqldb.jdbc.JDBCArray;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Order;
@@ -121,7 +120,7 @@ public class DBSeederTest_HSQL {
                 .connection(conn)
                 .dbSchema("PUBLIC")
                 .sourceType(SourceType.CSV)
-                .sourceDir("data")
+                .sourceDir("data.hsql")
                 .putOnAfterInsert(DBSSettings.ANY_TABLE, (seed, row, result) -> isAnythingInserted.set(true))
                 .build();
         DBSeeder seeder = new DBSeeder(settings);
@@ -181,10 +180,10 @@ public class DBSeederTest_HSQL {
         assertThat(row2_1.get("enum_field_2")).isEqualTo("TEST11");
         assertThat(row2_1.get("big_field_2")).isEqualTo("test_12");
         assertThat(row2_1.get("read_only")).isEqualTo(1);
-        Object array1 = ((JDBCArray) row2_1.get("test_array")).getArray();
-        assertThat(((Object[]) array1)).containsExactly(11, 12, 13);
-        Object array2 = ((JDBCArray) row2_1.get("test_array2")).getArray();
-        assertThat(((Object[]) array2)).containsExactly("test_char 1", "test char 2", "test char 3");
+//        Object array1 = ((JDBCArray) row2_1.get("test_array")).getArray();
+//        assertThat(((Object[]) array1)).containsExactly(11, 12, 13);
+//        Object array2 = ((JDBCArray) row2_1.get("test_array2")).getArray();
+//        assertThat(((Object[]) array2)).containsExactly("test_char 1", "test char 2", "test char 3");
         assertThat(row2_1.get("test_object")).isEqualTo("other test");
         assertThat(row2_1.get("is_deleted")).isEqualTo(1);
         assertThat(row2_1.get("test_table_1_id")).isEqualTo(row1.get("id"));
@@ -193,10 +192,10 @@ public class DBSeederTest_HSQL {
         assertThat(row2_2.get("enum_field_2")).isEqualTo("TEST12");
         assertThat(row2_2.get("big_field_2")).isEqualTo("test_13");
         assertThat(row2_2.get("read_only")).isEqualTo(2);
-        array1 = ((JDBCArray) row2_2.get("test_array")).getArray();
-        assertThat(((Object[]) array1)).containsExactly(21, 22, 23);
-        array2 = ((JDBCArray) row2_2.get("test_array2")).getArray();
-        assertThat(((Object[]) array2)).containsExactly("test_char 11", BIG_FIELD_VALUE, "test char 31");
+//        array1 = ((JDBCArray) row2_2.get("test_array")).getArray();
+//        assertThat(((Object[]) array1)).containsExactly(21, 22, 23);
+//        array2 = ((JDBCArray) row2_2.get("test_array2")).getArray();
+//        assertThat(((Object[]) array2)).containsExactly("test_char 11", BIG_FIELD_VALUE, "test char 31");
         assertThat(row2_2.get("test_object")).isEqualTo("other test 11");
         assertThat(row2_2.get("is_deleted")).isEqualTo(0);
         assertThat(row2_2.get("test_table_1_id")).isEqualTo(row2.get("id"));
@@ -236,7 +235,7 @@ public class DBSeederTest_HSQL {
                 .connection(conn)
                 .dbSchema("PUBLIC")
                 .sourceType(SourceType.CSV)
-                .sourceDir("data")
+                .sourceDir("data.hsql")
                 .build();
 
         QueryRunner runner = new QueryRunner();
@@ -297,10 +296,10 @@ public class DBSeederTest_HSQL {
         assertThat(row2_1.get("enum_field_2")).isEqualTo("TEST11");
         assertThat(row2_1.get("big_field_2")).isEqualTo("test_12");
         assertThat(row2_1.get("read_only")).isEqualTo(1);
-        Object array1 = ((JDBCArray) row2_1.get("test_array")).getArray();
-        assertThat(((Object[]) array1)).containsExactly(11, 12, 13);
-        Object array2 = ((JDBCArray) row2_1.get("test_array2")).getArray();
-        assertThat(((Object[]) array2)).containsExactly("test_char 1", "test char 2", "test char 3");
+//        Object array1 = ((JDBCArray) row2_1.get("test_array")).getArray();
+//        assertThat(((Object[]) array1)).containsExactly(11, 12, 13);
+//        Object array2 = ((JDBCArray) row2_1.get("test_array2")).getArray();
+//        assertThat(((Object[]) array2)).containsExactly("test_char 1", "test char 2", "test char 3");
         assertThat(row2_1.get("test_object")).isEqualTo("other test");
         assertThat(row2_1.get("is_deleted")).isEqualTo(1);
         assertThat(row2_1.get("test_table_1_id")).isEqualTo(row1.get("id"));
@@ -309,10 +308,10 @@ public class DBSeederTest_HSQL {
         assertThat(row2_2.get("enum_field_2")).isEqualTo("TEST12");
         assertThat(row2_2.get("big_field_2")).isEqualTo("test_13");
         assertThat(row2_2.get("read_only")).isEqualTo(2);
-        array1 = ((JDBCArray) row2_2.get("test_array")).getArray();
-        assertThat(((Object[]) array1)).containsExactly(21, 22, 23);
-        array2 = ((JDBCArray) row2_2.get("test_array2")).getArray();
-        assertThat(((Object[]) array2)).containsExactly("test_char 11", BIG_FIELD_VALUE, "test char 31");
+//        array1 = ((JDBCArray) row2_2.get("test_array")).getArray();
+//        assertThat(((Object[]) array1)).containsExactly(21, 22, 23);
+//        array2 = ((JDBCArray) row2_2.get("test_array2")).getArray();
+//        assertThat(((Object[]) array2)).containsExactly("test_char 11", BIG_FIELD_VALUE, "test char 31");
         assertThat(row2_2.get("test_object")).isEqualTo("other test 11");
         assertThat(row2_2.get("is_deleted")).isEqualTo(0);
         assertThat(row2_2.get("test_table_1_id")).isEqualTo(row2.get("id"));

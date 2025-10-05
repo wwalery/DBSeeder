@@ -5,6 +5,9 @@
     </encoder>
   </appender>
 
+  <logger name="dev.walgo.dbseeder" level="TRACE"/>
+
+
   <root level="debug">
     <appender-ref ref="STDOUT" />
   </root>

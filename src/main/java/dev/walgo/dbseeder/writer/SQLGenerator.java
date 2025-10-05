@@ -35,12 +35,16 @@ public class SQLGenerator {
         final StringBuilder fieldNames = new StringBuilder();
         final StringBuilder insertVars = new StringBuilder();
         RequestInfo.Builder builder = new RequestInfo.Builder();
-        info.getFields().forEach((field, idx) -> {
-            if (idx > 0) {
+        info.getFields().forEach((field, fieldInfo) -> {
+            Object value = data.values().get(fieldInfo.index);
+            if (info.ignoreOmits() && (value == null)) {
+                return;
+            }
+            if (fieldInfo.index > 0) {
                 fieldNames.append(", ");
                 insertVars.append(", ");
             }
-            String value = value2replacement(data.values().get(idx));
+            value = value2replacement(data.values().get(fieldInfo.index));
             fieldNames.append(field);
             ReferenceInfo ref = info.getReferences().get(field);
             if (ref != null) {
@@ -49,8 +53,8 @@ public class SQLGenerator {
                 insertVars.append(value);
             }
             if (isPlaceholder(value)) {
-                builder.addData(data.values().get(idx));
-                builder.addFields(new RequestInfo.Field(field, idx));
+                builder.addData(data.values().get(fieldInfo.index));
+                builder.addFields(new RequestInfo.Field(field, fieldInfo.index));
             }
         });
         String sql = "INSERT INTO %s (%s) VALUES (%s)".formatted(info.getTableName(),
@@ -66,11 +70,15 @@ public class SQLGenerator {
         final StringBuilder updateStr = new StringBuilder();
         final StringBuilder whereString = new StringBuilder();
         List<RequestInfo.Field> whereFields = new ArrayList<>();
-        List<String> whereVars = new ArrayList<>();
+        List<Object> whereVars = new ArrayList<>();
         RequestInfo.Builder builder = new RequestInfo.Builder();
-        info.getFields().forEach((field, idx) -> {
+        info.getFields().forEach((field, fieldInfo) -> {
+            Object rawValue = data.values().get(fieldInfo.index);
+            if (info.ignoreOmits() && (rawValue == null)) {
+                return;
+            }
             ReferenceInfo ref = info.getReferences().get(field);
-            String placeholder = value2replacement(data.values().get(idx));
+            String placeholder = value2replacement(rawValue);
             String itemValue = ref == null ? placeholder : "(" + reference(ref, placeholder) + ")";
             if (info.getKeys().containsKey(field)) {
                 if (!whereString.isEmpty()) {
@@ -78,8 +86,8 @@ public class SQLGenerator {
                 }
                 whereString.append(field).append(" = ").append(itemValue);
                 if (isPlaceholder(placeholder)) {
-                    whereVars.add(data.values().get(idx));
-                    whereFields.add(new RequestInfo.Field(field, idx));
+                    whereVars.add(data.values().get(fieldInfo.index));
+                    whereFields.add(new RequestInfo.Field(field, fieldInfo.index));
                 }
             } else {
                 if (!updateStr.isEmpty()) {
@@ -87,8 +95,8 @@ public class SQLGenerator {
                 }
                 updateStr.append(field).append(" = ").append(itemValue);
                 if (isPlaceholder(placeholder)) {
-                    builder.addData(data.values().get(idx));
-                    builder.addFields(new RequestInfo.Field(field, idx));
+                    builder.addData(data.values().get(fieldInfo.index));
+                    builder.addFields(new RequestInfo.Field(field, fieldInfo.index));
                 }
             }
         });
@@ -107,7 +115,7 @@ public class SQLGenerator {
         return builder.build();
     }
 
-    public String reference(ReferenceInfo reference, String value) {
+    public String reference(ReferenceInfo reference, Object value) {
         String column = StringUtils.join(reference.getTableColumn(),
                 " || '" + settings.csvMultiRefDelimiter() + "' || ");
         String result = "SELECT %s FROM %s WHERE %s = %s".formatted(reference.getTableKeyColumn(),
@@ -126,7 +134,7 @@ public class SQLGenerator {
             if (!where.isEmpty()) {
                 where += " AND ";
             }
-            String value = data.values().get(key.getValue());
+            Object value = data.values().get(key.getValue());
             String checkValue = value2replacement(value);
             boolean usePlaceholder = isPlaceholder(checkValue);
             if (info.getReferences().containsKey(key.getKey())) {
@@ -137,7 +145,7 @@ public class SQLGenerator {
             where += key.getKey() + " = " + checkValue;
             if (usePlaceholder) {
                 builder.addData(value);
-                builder.addFields(new RequestInfo.Field(key.getKey(), info.getFields().get(key.getKey())));
+                builder.addFields(new RequestInfo.Field(key.getKey(), info.getFields().get(key.getKey()).index));
             }
         }
         String result = "SELECT COUNT(*) FROM %s WHERE %s".formatted(info.getTableName(), where);
@@ -154,18 +162,22 @@ public class SQLGenerator {
      * @param data value
      * @return ? as placeholder or real value
      */
-    protected String value2replacement(String data) {
+    protected String value2replacement(Object data) {
         if (data == null) {
             return DATA_PLACEHOLDER;
-        } else if (data.startsWith(DIRECT_VALUE_SIGN)) {
-            return data.substring(DIRECT_VALUE_SIGN.length());
+        } else if ((data instanceof String stringData) && stringData.startsWith(DIRECT_VALUE_SIGN)) {
+            return stringData.substring(DIRECT_VALUE_SIGN.length());
         } else {
             return DATA_PLACEHOLDER;
         }
     }
 
-    private boolean isPlaceholder(String data) {
-        return DATA_PLACEHOLDER.equals(data);
+    private boolean isPlaceholder(Object data) {
+        if (data instanceof String stringData) {
+            return DATA_PLACEHOLDER.equals(stringData);
+        } else {
+            return false;
+        }
     }
 
 }
