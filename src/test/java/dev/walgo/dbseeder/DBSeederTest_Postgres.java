@@ -190,7 +190,7 @@ public class DBSeederTest_Postgres extends PostgreSQLTest {
         array1 = ((PgArray) row2_2.get("test_array")).getArray();
         assertThat(((Object[]) array1)).containsExactly(21, 22, 23);
         array2 = ((PgArray) row2_2.get("test_array2")).getArray();
-        assertThat(((Object[]) array2)).containsExactly("test_char 11", BIG_FIELD_VALUE, "test char 31");
+        assertThat(((Object[]) array2)).containsExactly("test_char 11", "ext-" + BIG_FIELD_VALUE, "test char 31");
         assertThat(row2_2.get("test_object")).isEqualTo("other test 11");
         assertThat(row2_2.get("is_deleted")).isEqualTo(0);
         assertThat(row2_2.get("test_table_1_id")).isEqualTo(row2.get("id"));
@@ -316,7 +316,7 @@ public class DBSeederTest_Postgres extends PostgreSQLTest {
         array1 = ((PgArray) row2_2.get("test_array")).getArray();
         assertThat(((Object[]) array1)).containsExactly(21, 22, 23);
         array2 = ((PgArray) row2_2.get("test_array2")).getArray();
-        assertThat(((Object[]) array2)).containsExactly("test_char 11", BIG_FIELD_VALUE, "test char 31");
+        assertThat(((Object[]) array2)).containsExactly("test_char 11", "ext-" + BIG_FIELD_VALUE, "test char 31");
         assertThat(row2_2.get("test_object")).isEqualTo("other test 11");
         assertThat(row2_2.get("is_deleted")).isEqualTo(0);
         assertThat(row2_2.get("test_table_1_id")).isEqualTo(row2.get("id"));

@@ -38,6 +38,7 @@ import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.dbutils.handlers.MapHandler;
 import org.apache.commons.dbutils.handlers.ScalarHandler;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.function.TriConsumer;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -335,17 +336,26 @@ public class DBWriter implements IWriter {
     }
 
     private String checkExternal(String item) {
-        if (!item.startsWith(settings.externalValueRef())) {
+        String extRef = settings.externalValueRef() + "{";
+        int extRefStart = item.indexOf(extRef);
+        if (extRefStart < 0) {
             return item;
         }
-        String fileName = item.substring(settings.externalValueRef().length());
+        int extRefEnd = item.indexOf("}", extRefStart + extRef.length());
+        if (extRefEnd < 0) {
+            throw new RuntimeException("External value reference not closed: [" + item + "]");
+        }
+        int extRefLen = extRef.length();
+
+        String fileName = item.substring(extRefStart + extRefLen, extRefEnd);
         String srcDir = settings.sourceDir().endsWith("/") ? settings.sourceDir() : settings.sourceDir() + "/";
         File dir = new File(srcDir);
         boolean isExternalResource = dir.exists();
+        String value = "";
         if (isExternalResource) {
             Path path = new File(srcDir + fileName).toPath();
             try {
-                return Files.readString(path);
+                value = Files.readString(path);
             } catch (IOException ex) {
                 throw new RuntimeException(ex);
             }
@@ -354,12 +364,13 @@ public class DBWriter implements IWriter {
                     ? settings.classLoader()
                     : getClass().getClassLoader();
             try (InputStream stream = classLoader.getResourceAsStream(srcDir + fileName)) {
-                return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+                value = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
             } catch (Exception ex) {
                 LOG.error("Error on reading resource: [{}]", srcDir + fileName);
                 throw new RuntimeException(ex);
             }
         }
+        return StringUtils.substring(item, 0, extRefStart) + value + StringUtils.substring(item, extRefEnd + 1);
     }
 
     protected Object raw2object(Object objectItem, int fieldType, String fieldTypeName) {

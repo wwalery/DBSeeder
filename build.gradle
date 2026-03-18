@@ -8,6 +8,7 @@ plugins {
   id 'signing'
   id 'com.adarshr.test-logger' version '4.0.0'
   id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
+  id "com.github.ben-manes.versions" version "0.51.0"
 }
 
 sourceCompatibility = JavaVersion.VERSION_17
@@ -29,8 +30,8 @@ spotless {
 
 dependencies {
 
-  annotationProcessor 'org.immutables:value:2.10.1'
-  compileOnly 'org.immutables:value:2.10.1'
+  annotationProcessor 'org.immutables:value:2.12.1'
+  compileOnly 'org.immutables:value:2.12.1'
   compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
   
   api "org.slf4j:slf4j-api:${slf4jVersion}"
@@ -209,6 +210,26 @@ jar {
     'Built-JDK': System.getProperty('java.version')
   ])
 }
+
+ext.isNonStableVersion = { String version ->
+//  println("Check version: ${version}")
+  if (version ==~ /.+?-rc\d$/) 
+    return true
+  if (version ==~ /.+?-M\d$/) 
+    return true
+  if (version ==~ /.+?-alpha\d$/) 
+    return true
+  if (version ==~ /.+?\.CR\d$/) 
+    return true
+  return false
+}
+
+tasks.named("dependencyUpdates").configure {
+  rejectVersionIf {
+    isNonStableVersion(it.candidate.version)
+  }
+}
+
 
 task javadocJar(type: Jar) {
   archiveClassifier = 'javadoc'
