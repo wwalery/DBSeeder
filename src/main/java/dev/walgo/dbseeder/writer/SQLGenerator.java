@@ -166,7 +166,8 @@ public class SQLGenerator {
         if (data == null) {
             return DATA_PLACEHOLDER;
         } else if ((data instanceof String stringData) && stringData.startsWith(DIRECT_VALUE_SIGN)) {
-            return stringData.substring(DIRECT_VALUE_SIGN.length());
+            String value = stringData.substring(DIRECT_VALUE_SIGN.length());
+            return WriterUtils.checkExternal(settings, value, true);
         } else {
             return DATA_PLACEHOLDER;
         }

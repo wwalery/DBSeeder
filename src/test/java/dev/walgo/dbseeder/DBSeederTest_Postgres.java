@@ -181,6 +181,7 @@ public class DBSeederTest_Postgres extends PostgreSQLTest {
         assertThat(row2_1.get("test_object")).isEqualTo("other test");
         assertThat(row2_1.get("is_deleted")).isEqualTo(1);
         assertThat(row2_1.get("test_table_1_id")).isEqualTo(row1.get("id"));
+        assertThat(row2_1.get("test_json").toString()).isEqualTo("{}");
 
         Map<String, Object> row2_2 = result2.get(1);
         assertThat(row2_2.get("id")).isEqualTo(tableInsertResult.get(1));
@@ -194,6 +195,8 @@ public class DBSeederTest_Postgres extends PostgreSQLTest {
         assertThat(row2_2.get("test_object")).isEqualTo("other test 11");
         assertThat(row2_2.get("is_deleted")).isEqualTo(0);
         assertThat(row2_2.get("test_table_1_id")).isEqualTo(row2.get("id"));
+        assertThat(row2_2.get("test_json").toString().replace("\\n", "\n")).isEqualTo("""
+            {"val1": "v1 - %s", "val2": "v2 - %s"}""".formatted(BIG_FIELD_VALUE, BIG_FIELD_VALUE));
 
         tableName = "test_table_3";
         List<Map<String, Object>> result3 = runner.query(conn, "SELECT * from %s".formatted(tableName),

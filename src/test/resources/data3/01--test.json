@@ -1,0 +1,21 @@
+{ 
+  "tableName": "test_table_1",
+  "action": "MODIFY",
+  "ignoreOmits": false,
+  "fields": ["enum_field", "big_field", "read_only", "is_deleted", "double_field", "char_field", "date_field", "time_field", "timestamp_field", "decimal_field_1" ],
+  "keys": ["enum_field"],
+  "data": [
+    {
+      "enum_field": "TEST2",
+      "big_field": "test_2",
+      "read_only": 11,
+      "is_deleted": 2,
+      "double_field": 12.3,
+      "char_field": "test_ch2",
+      "date_field": "2023-05-08",
+      "time_field": "13:08:34",
+      "timestamp_field": "2023-05-08 13:08:33.456",
+      "decimal_field_1": "46"
+    }
+  ]
+}

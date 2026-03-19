@@ -11,14 +11,8 @@ import dev.walgo.walib.db.ColumnInfo;
 import dev.walgo.walib.db.DBInfo;
 import dev.walgo.walib.db.DBUtils;
 import dev.walgo.walib.db.TableInfo;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.Time;
@@ -38,7 +32,6 @@ import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.dbutils.handlers.MapHandler;
 import org.apache.commons.dbutils.handlers.ScalarHandler;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.function.TriConsumer;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -335,44 +328,6 @@ public class DBWriter implements IWriter {
 
     }
 
-    private String checkExternal(String item) {
-        String extRef = settings.externalValueRef() + "{";
-        int extRefStart = item.indexOf(extRef);
-        if (extRefStart < 0) {
-            return item;
-        }
-        int extRefEnd = item.indexOf("}", extRefStart + extRef.length());
-        if (extRefEnd < 0) {
-            throw new RuntimeException("External value reference not closed: [" + item + "]");
-        }
-        int extRefLen = extRef.length();
-
-        String fileName = item.substring(extRefStart + extRefLen, extRefEnd);
-        String srcDir = settings.sourceDir().endsWith("/") ? settings.sourceDir() : settings.sourceDir() + "/";
-        File dir = new File(srcDir);
-        boolean isExternalResource = dir.exists();
-        String value = "";
-        if (isExternalResource) {
-            Path path = new File(srcDir + fileName).toPath();
-            try {
-                value = Files.readString(path);
-            } catch (IOException ex) {
-                throw new RuntimeException(ex);
-            }
-        } else {
-            ClassLoader classLoader = settings.classLoader() != null
-                    ? settings.classLoader()
-                    : getClass().getClassLoader();
-            try (InputStream stream = classLoader.getResourceAsStream(srcDir + fileName)) {
-                value = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
-            } catch (Exception ex) {
-                LOG.error("Error on reading resource: [{}]", srcDir + fileName);
-                throw new RuntimeException(ex);
-            }
-        }
-        return StringUtils.substring(item, 0, extRefStart) + value + StringUtils.substring(item, extRefEnd + 1);
-    }
-
     protected Object raw2object(Object objectItem, int fieldType, String fieldTypeName) {
         Object dataItem;
         if (objectItem == null) {
@@ -380,7 +335,7 @@ public class DBWriter implements IWriter {
         }
         if (objectItem instanceof String stringItem) {
             if (DBUtils.isStringField(fieldType)) {
-                dataItem = checkExternal(stringItem);
+                dataItem = WriterUtils.checkExternal(settings, stringItem, false);
             } else {
                 dataItem = switch (fieldType) {
                     case Types.SMALLINT,
@@ -401,7 +356,7 @@ public class DBWriter implements IWriter {
                     case Types.BINARY, Types.VARBINARY -> new BigInteger(stringItem, 2).toByteArray();
                     case Types.OTHER -> database.valueFromString(fieldTypeName, stringItem);
                     case Types.ARRAY -> throw new RuntimeException("Unreachable case");
-                    default -> checkExternal(stringItem);
+                    default -> WriterUtils.checkExternal(settings, stringItem, false);
                 };
             }
         } else {
@@ -438,7 +393,7 @@ public class DBWriter implements IWriter {
                 for (int i = 0; i < listItems.size(); i++) {
                     Object rawElem = listItems.get(i);
                     if (rawElem instanceof String stringElem) {
-                        rawElem = checkExternal(stringElem);
+                        rawElem = WriterUtils.checkExternal(settings, stringElem, false);
                     }
                     elems[i] = raw2object(rawElem, type, field.typeName());
                 }

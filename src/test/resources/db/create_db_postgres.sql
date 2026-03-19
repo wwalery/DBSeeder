@@ -31,7 +31,8 @@ CREATE TABLE test_table_2 (
   test_array2 VARCHAR(50)[],
   test_object TEXT,
   is_deleted SMALLINT,
-  test_table_1_id INT
+  test_table_1_id INT,
+  test_json JSONB
 );
 
 ALTER TABLE test_table_2

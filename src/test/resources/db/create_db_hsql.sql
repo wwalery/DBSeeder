@@ -30,7 +30,8 @@ CREATE TABLE test_table_2 (
   test_array2 VARCHAR(50) ARRAY DEFAULT ARRAY[],
   test_object OTHER,
   is_deleted TINYINT,
-  test_table_1_id INT
+  test_table_1_id INT,
+  test_json OTHER
 );
 
 ALTER TABLE test_table_2

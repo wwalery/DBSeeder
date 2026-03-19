@@ -18,6 +18,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,7 +94,7 @@ public class DBSeeder {
                     .sorted()
                     .toList();
         } else {
-            String fileRegex = "^" + StringUtils.replace(srcDir, "/", "\\/")
+            String fileRegex = "^" + Strings.CS.replace(srcDir, "/", "\\/")
                     + ".+?"
 //                    + ".+?\\"
 //                    + settings.sourceExt()
